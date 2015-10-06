@@ -1758,9 +1758,18 @@ bool fill_es_buffer
     {
         return false;
     }
-
-    // Append Stop Code
-    memcpy(&u8EsBuffer[ES_BUFFER_SIZE], u8endCode, sizeof(u8endCode));
+    else if (rd_sz < (ES_BUFFER_SIZE - u32NalSize))  // last read!  
+    {
+        printf("last read!\n");
+        
+        // Append Stop Code at the end of last read
+        memcpy(&u8EsBuffer[u32NalSize + rd_sz], u8endCode, sizeof(u8endCode));        
+    }
+    else
+    {
+        // Append Stop Code at the end of buffer
+        memcpy(&u8EsBuffer[ES_BUFFER_SIZE], u8endCode, sizeof(u8endCode));
+    }
 
     return true;
 }
