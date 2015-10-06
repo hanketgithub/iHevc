@@ -798,12 +798,12 @@ static void parse_slice_hdr(NalUnitType nal_unit_type)
 {
     bool        first_slice_segment_in_pic_flag;
     bool        no_output_of_prior_pics_flag;
-    uint32_t    slice_pic_parameter_set_id = 0;
+    uint32_t    slice_pic_parameter_set_id      = 0;
     bool        dependent_slice_segment_flag    = false;
     uint32_t    slice_segment_address;
-    SliceType   slice_type = B_SLICE;
-    bool        pic_output_flag = true;
-    uint32_t    colour_plane_id;
+    SliceType   slice_type                      = B_SLICE;
+    bool        pic_output_flag                 = true;
+    uint32_t    colour_plane_id                 = 0;
     uint32_t    slice_pic_order_cnt_lsb         = 0;
     bool        short_term_ref_pic_set_sps_flag;
     uint32_t    short_term_ref_pic_set_idx;
@@ -817,7 +817,7 @@ static void parse_slice_hdr(NalUnitType nal_unit_type)
     uint32_t    num_ref_idx_l0_active_minus1;
     uint32_t    num_ref_idx_l1_active_minus1;
 
-    bool        mvd_l1_zero_flag;
+    bool        mvd_l1_zero_flag                = false;
     bool        cabac_init_flag                 = false;
 
     uint32_t    five_minus_max_num_merge_cand;
@@ -848,6 +848,8 @@ static void parse_slice_hdr(NalUnitType nal_unit_type)
     p_pps = &pps[slice_pic_parameter_set_id];
     p_sps = &sps[p_pps->m_SPSId];
 
+    num_ref_idx_l1_active_minus1 = p_pps->m_numRefIdxL1DefaultActive;
+    
     bool        slice_reserved_flag[p_pps->m_numExtraSliceHeaderBits];
     bool        slice_deblocking_filter_disabled_flag   = p_pps->m_picDisableDeblockingFilterFlag;
     int32_t     slice_beta_offset_div2                  = p_pps->m_deblockingFilterBetaOffsetDiv2;
@@ -1070,6 +1072,7 @@ static void parse_slice_hdr(NalUnitType nal_unit_type)
         }
 
         slice_qp_delta = READ_SVLC("slice_qp_delta");
+        slice.m_iSliceQp = p_pps->m_picInitQPMinus26 + 26 + slice_qp_delta;
 
         if (p_pps->m_bSliceChromaQpFlag)
         {
@@ -1142,7 +1145,6 @@ static void parse_slice_hdr(NalUnitType nal_unit_type)
     
     slice.m_iPOC                            = slice_pic_order_cnt_lsb; 
     slice.m_eSliceType                      = slice_type;
-    slice.m_iSliceQp                        = p_pps->m_picInitQPMinus26 + 26 + slice_qp_delta;
     
     slice.m_dependentSliceSegmentFlag       = dependent_slice_segment_flag;
     slice.m_deblockingFilterDisable         = slice_deblocking_filter_disabled_flag;
@@ -1843,7 +1845,7 @@ int main(int argc, const char * argv[])
             printf("Try rescan NAL=%s\n", rescan ? "T" : "F");
         }
 
-        printf("offset=%d\n", ptr - u8EsBuffer);
+        printf("offset=%ld\n", ptr - u8EsBuffer);
 
         nal_unit_type           = (nal_unit_header[0] & (BIT6 | BIT5 | BIT4 | BIT3 | BIT2 | BIT1)) >> 1;
         
