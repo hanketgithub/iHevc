@@ -830,8 +830,8 @@ static void parse_slice_hdr(NalUnitType nal_unit_type)
 
     uint32_t    num_entry_point_offsets                 = 0;
     
-    SPS_t      *p_sps;
-    PPS_t      *p_pps;
+    SPS_t      *p_sps = NULL;
+    PPS_t      *p_pps = NULL;
 
 
     first_slice_segment_in_pic_flag = READ_FLAG("first_slice_segment_in_pic_flag");
@@ -1468,8 +1468,8 @@ static void parse_short_term_ref_pic_set(SPS_t *pSPS, ReferencePictureSet_t *rps
             rps->m_used[i]              = used_by_curr_pic_s0_flag[i];
         }
 
-        uint32_t delta_poc_s1_minus1[num_negative_pics];
-        bool     used_by_curr_pic_s1_flag[num_negative_pics];        
+        uint32_t delta_poc_s1_minus1[num_positive_pics];
+        bool     used_by_curr_pic_s1_flag[num_positive_pics];
         for (i = 0; i < num_positive_pics; i++)
         {
             delta_poc_s1_minus1[i]      = READ_UVLC("delta_poc_s1_minus1[i]");
