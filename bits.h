@@ -1,13 +1,13 @@
 //
 //  bits.h
-//  HevcParser
+//  iHevc
 //
 //  Created by hank on 2015/8/31.
 //  Copyright (c) 2015¦~ hank. All rights reserved.
 //
 
-#ifndef ___HEVC_PARSER_BITS_H___
-#define ___HEVC_PARSER_BITS_H___
+#ifndef ___I_HEVC_BITS_H___
+#define ___I_HEVC_BITS_H___
 
 typedef struct
 {

@@ -1,6 +1,6 @@
 //
 //  main.c
-//  HevcYeux
+//  iHevc
 //
 //  Created by Hank Lee on 8/31/15.
 //  Copyright (c) 2015 Hank Lee. All rights reserved.
@@ -67,9 +67,9 @@ static void pred_weight_table();
  * local variable
  */
 
-static uint8_t end_code[] = { 0x00, 0x00, 0x01, 0xFF };
+static uint8_t u8endCode[] = { 0x00, 0x00, 0x01, 0xFF };
 
-static uint8_t u8EsBuffer[ES_BUFFER_SIZE + sizeof(end_code)];
+static uint8_t u8EsBuffer[ES_BUFFER_SIZE + sizeof(u8endCode)];
 
 static VPS_t vps;
 
@@ -110,6 +110,21 @@ static bool has_start_code
     }
     
     return addr[i] == 0x01 ? true : false;
+}
+
+static bool has_end_code(uint8_t *p)
+{
+    if (p[0] == 0x00 &&
+        p[0] == 0x00 &&
+        p[0] == 0x01 &&
+        p[0] == 0xFF)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 static uint8_t scan_nal
