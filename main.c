@@ -87,9 +87,10 @@ static bool sub_pic_hrd_params_present_flag;
 
 static HevcInfo_t tHevcInfo;
 
-static char frameInfo[0x1000];
+static char frameInfo[0x10000];
 static char *pInfo = frameInfo;
 
+static uint32_t u32frameCnt;
 
 
 /******************************
@@ -115,9 +116,9 @@ static bool has_start_code
 static bool has_end_code(uint8_t *p)
 {
     if (p[0] == 0x00 &&
-        p[0] == 0x00 &&
-        p[0] == 0x01 &&
-        p[0] == 0xFF)
+        p[1] == 0x00 &&
+        p[2] == 0x01 &&
+        p[3] == 0xFF)
     {
         return true;
     }
@@ -127,15 +128,19 @@ static bool has_end_code(uint8_t *p)
     }
 }
 
-static uint8_t scan_nal
+
+static bool scan_nal
 (
     uint8_t     *start_addr,
     uint8_t     *nal_unit_header,
-    uint32_t    *nal_len
+    uint32_t    *nal_len,
+    uint32_t    *prefix_len
 )
 {
     uint8_t offset = 0;
     uint8_t *p;
+
+    bool ret = true;
     
     p = start_addr;
 
@@ -149,9 +154,10 @@ static uint8_t scan_nal
     }
 
     //printf("offset=%d\n", offset);
+    *prefix_len = offset;
     p += offset;
 
-    while (!has_start_code(p, 2) && !has_start_code(p, 3))
+    while (!has_end_code(p) && !has_start_code(p, 2) && !has_start_code(p, 3))
     {
         p++;
     }
@@ -160,7 +166,13 @@ static uint8_t scan_nal
     nal_unit_header[1] = start_addr[offset + 1];
     *nal_len  = (uint32_t) (p - start_addr);
 
-    return offset;
+
+    if (has_end_code(p))
+    {
+        ret = false;
+    }
+
+    return ret;
 }
 
 static uint32_t EBSPtoRBSP
@@ -1170,7 +1182,7 @@ static void parse_slice_hdr(NalUnitType nal_unit_type)
         }
     }
 
-    pInfo += sprintf(pInfo, "%s\n", p_str);
+    pInfo += sprintf(pInfo, "[%4d] %s\n", u32frameCnt++, p_str);
 }
 
 static void pred_weight_table(SPS_t *pSPS)
@@ -1734,7 +1746,28 @@ static void parse_sub_layer_hrd_params(uint32_t CpbCnt)
     }
 }
 
+bool fill_es_buffer
+(
+    uint8_t *pu8NalAddr,
+    uint32_t u32NalSize,
+    int fd
+)
+{
+    ssize_t rd_sz;
+    
+    memmove(u8EsBuffer, pu8NalAddr, u32NalSize);
 
+    rd_sz = read(fd, &u8EsBuffer[u32NalSize], ES_BUFFER_SIZE - u32NalSize);
+    if (rd_sz == 0) // EOF
+    {
+        return false;
+    }
+
+    // Append Stop Code
+    memcpy(&u8EsBuffer[ES_BUFFER_SIZE], u8endCode, sizeof(u8endCode));
+
+    return true;
+}
 
 int main(int argc, const char * argv[])
 {
@@ -1755,17 +1788,6 @@ int main(int argc, const char * argv[])
         perror(argv[1]);
         exit(-1);
     }
-
-    // Read in u8EsBuffer and append stop code
-    rd_sz = read(fd, u8EsBuffer, ES_BUFFER_SIZE);
-    fprintf(stderr, "Read Size=%zd\n", rd_sz);
-    u8EsBuffer[rd_sz]        = 0x00;
-    u8EsBuffer[rd_sz + 1]    = 0x00;
-    u8EsBuffer[rd_sz + 2]    = 0x00;
-    u8EsBuffer[rd_sz + 3]    = 0x01;
-    u8EsBuffer[rd_sz + 4]    = 0x00;
-    u8EsBuffer[rd_sz + 5]    = 0x00;
-    u8EsBuffer[rd_sz + 6]    = 0x80;
     
     uint8_t *ptr = u8EsBuffer;
     uint8_t nal_unit_header[SIZE_OF_NAL_UNIT_HDR];
@@ -1776,43 +1798,63 @@ int main(int argc, const char * argv[])
     uint8_t     nuh_temporal_id_plus1;
     uint32_t    nal_len;
     uint32_t    offset = 0;
-    uint8_t     prefix_len = 0;
+    uint32_t    prefix_len = 0;
 
-    off_t       input_file_sz = 0;
-
-    // compute file size
-    {
-        int fd;
-        struct stat f_stat;
-
-        fd = open(argv[1], O_RDONLY);
-        fstat(fd, &f_stat);
-
-        input_file_sz = f_stat.st_size;
-
-        //printf("file size=%u\n", input_file_sz);
-    }
+    fill_es_buffer(u8EsBuffer, 0, fd);
     
-    while ((ptr - u8EsBuffer) < input_file_sz)
+    while (1)
     {
-        prefix_len = scan_nal(ptr, nal_unit_header, &nal_len);
+        
+        if (!scan_nal
+             (
+                ptr,
+                nal_unit_header,
+                &nal_len,
+                &prefix_len
+             )
+           )
+        {
+            // fill buffer
+            printf("fill buffer!\n");
+            
+            if (!fill_es_buffer(ptr, nal_len, fd))
+            {
+                printf("No more data to read!\n");
+                break;
+            }
+
+            // rewind ptr
+            ptr = u8EsBuffer;
+            offset = 0;
+
+            // try scan NAL again!
+            bool rescan = scan_nal
+             (
+                ptr,
+                nal_unit_header,
+                &nal_len,
+                &prefix_len
+             );
+
+            printf("Try rescan NAL=%s\n", rescan ? "T" : "F");
+        }
 
         printf("offset=%d\n", ptr - u8EsBuffer);
 
         nal_unit_type           = (nal_unit_header[0] & (BIT6 | BIT5 | BIT4 | BIT3 | BIT2 | BIT1)) >> 1;
-        /*
+        
         forbidden_zero_bit      = (nal_unit_header[0] & BIT7) >> 7;
         nuh_layer_id            = (nal_unit_header[0] & BIT0) << 5 | (nal_unit_header[1] & (BIT7 | BIT6 | BIT5 | BIT4 | BIT3)) >> 3;
         nuh_temporal_id_plus1   = nal_unit_header[1] & (BIT2 | BIT1 | BIT0);
 
-        printf("forbidden_zero_bit=%d, nal_unit_type=%02u, nuh_layer_id=%u, nuh_temporal_id_plus1=%u, len=%6u, offset=0x%x\n",
+        printf("forbidden_zero_bit=%d, nal_unit_type=%02u, nuh_layer_id=%u, nuh_temporal_id_plus1=%u, nal_len=%6u, offset=0x%x\n",
                forbidden_zero_bit,
                nal_unit_type,
                nuh_layer_id,
                nuh_temporal_id_plus1,
                nal_len,
                offset);
-        */
+        
         
         m_pcBitstream.m_fifo            = &u8EsBuffer[offset + prefix_len + SIZE_OF_NAL_UNIT_HDR];
         m_pcBitstream.m_fifo_size       = nal_len - prefix_len - SIZE_OF_NAL_UNIT_HDR;
@@ -1878,9 +1920,7 @@ int main(int argc, const char * argv[])
         
         offset = offset + nal_len;
         
-        ptr += nal_len;
-        
-        //if (ptr > u8EsBuffer + sizeof(u8EsBuffer)) break;
+        ptr += nal_len;        
     }
 
     fprintf(stderr, "Resolution: %d x %d\n", tHevcInfo.u32Width, tHevcInfo.u32Height);
