@@ -29,7 +29,7 @@
  * define
  */
 #define SIZE_OF_NAL_UNIT_HDR    2
-#define ES_BUFFER_SIZE          (1000000)
+#define ES_BUFFER_SIZE          0x100000
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
@@ -67,7 +67,7 @@ static void pred_weight_table();
  * local variable
  */
 
-static uint8_t u8endCode[] = { 0x00, 0x00, 0x01, 0xFF };
+static uint8_t u8endCode[] = { 0xFC, 0xFD, 0xFE, 0xFF };
 
 static uint8_t u8EsBuffer[ES_BUFFER_SIZE + sizeof(u8endCode)];
 
@@ -115,10 +115,7 @@ static bool has_start_code
 
 static bool has_end_code(uint8_t *p)
 {
-    if (p[0] == 0x00 &&
-        p[1] == 0x00 &&
-        p[2] == 0x01 &&
-        p[3] == 0xFF)
+    if (memcmp(p, u8endCode, sizeof(u8endCode)) == 0)
     {
         return true;
     }
@@ -153,7 +150,7 @@ static bool scan_nal
         offset = 4;
     }
 
-    //printf("offset=%d\n", offset);
+    //printf("prefix offset=%d\n", offset);
     *prefix_len = offset;
     p += offset;
 
@@ -165,7 +162,6 @@ static bool scan_nal
     nal_unit_header[0] = start_addr[offset];
     nal_unit_header[1] = start_addr[offset + 1];
     *nal_len  = (uint32_t) (p - start_addr);
-
 
     if (has_end_code(p))
     {
@@ -1803,8 +1799,7 @@ int main(int argc, const char * argv[])
     fill_es_buffer(u8EsBuffer, 0, fd);
     
     while (1)
-    {
-        
+    {        
         if (!scan_nal
              (
                 ptr,
