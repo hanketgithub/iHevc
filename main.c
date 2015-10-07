@@ -29,7 +29,7 @@
  * define
  */
 #define SIZE_OF_NAL_UNIT_HDR    2
-#define ES_BUFFER_SIZE          0x100000
+#define ES_BUFFER_SIZE          (3840 * 2160)
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
