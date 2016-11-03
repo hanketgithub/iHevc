@@ -268,6 +268,7 @@ static void parse_vps(VPS_t *pVPS)
     uint32_t    vps_max_layer_id;
     uint32_t    vps_num_layer_sets_minus1;
     bool        vps_extension_flag;
+    bool        rbsp_stop_one_bit;
     
     
     vps_video_parameter_set_id                  = READ_CODE(4, "vps_video_parameter_set_id");
@@ -357,6 +358,8 @@ static void parse_vps(VPS_t *pVPS)
         }
     }
 
+    rbsp_stop_one_bit = READ_FLAG("rbsp_stop_one_bit");
+
 
     pVPS->m_VPSId = vps_video_parameter_set_id;
 }
@@ -382,6 +385,7 @@ static void parse_sps(void)
     uint32_t    bit_depth_chroma_minus8;
     uint32_t    log2_max_pic_order_cnt_lsb_minus4;
     bool        sps_sub_layer_ordering_info_present_flag;
+    bool        rbsp_stop_one_bit;
 
     
     sps_video_parameter_set_id      = READ_CODE(4, "sps_video_parameter_set_id");
@@ -539,6 +543,8 @@ static void parse_sps(void)
             sps_extension_data_flag = READ_FLAG("sps_extension_data_flag");
         }
     }
+    
+    rbsp_stop_one_bit = READ_FLAG("rbsp_stop_one_bit");
 
     p_sps->m_VPSId                           = sps_video_parameter_set_id;
     p_sps->m_SPSId                           = sps_seq_parameter_set_id;
@@ -720,6 +726,15 @@ static void parse_pps(void)
     p_pps->m_deblockingFilterBetaOffsetDiv2      = pps_beta_offset_div2;
     p_pps->m_deblockingFilterTcOffsetDiv2        = pps_tc_offset_div2;
     p_pps->m_listsModificationPresentFlag        = lists_modification_present_flag;
+}
+
+static void parse_aud()
+{
+    bool rbsp_stop_one_bit = false;
+    
+    READ_CODE(3, "pic_type");
+
+    rbsp_stop_one_bit = READ_FLAG("rbsp_stop_one_bit");
 }
 
 /* profile_tier_level */
@@ -1892,6 +1907,14 @@ int main(int argc, const char * argv[])
                 EBSPtoRBSP(&u8EsBuffer[offset + prefix_len], nal_len, 0);
                 
                 parse_pps();
+                
+                break;
+            }
+            case NAL_UNIT_ACCESS_UNIT_DELIMITER:
+            {
+                EBSPtoRBSP(&u8EsBuffer[offset + prefix_len], nal_len, 0);
+
+                parse_aud();
                 
                 break;
             }
