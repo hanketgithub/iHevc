@@ -701,6 +701,8 @@ static void parse_pps(void)
     {
     }
 
+    bool rbsp_stop_one_bit = READ_FLAG("rbsp_stop_one_bit");
+
     p_pps->m_PPSId                               = pps_pic_parameter_set_id;
     p_pps->m_SPSId                               = pps_seq_parameter_set_id;
     p_pps->m_picInitQPMinus26                    = init_qp_minus26;
