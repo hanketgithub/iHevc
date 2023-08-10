@@ -1,9 +1,9 @@
 //
 //  bits.c
-//  HevcYeux
+//  iHevc
 //
 //  Created by hank on 2015/8/31.
-//  Copyright (c) 2015¦~ hank. All rights reserved.
+//  Copyright (c) 2015 hank. All rights reserved.
 //
 
 #include <assert.h>
