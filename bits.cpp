@@ -205,14 +205,11 @@ static uint32_t pseudo_read
     return retVal;
 }
 
-#include <string>
-
-using namespace std;
 
 uint32_t READ_CODE
 (
     uint32_t length, 
-    char *name
+    const char *name
 )
 {
     uint32_t ret;
@@ -227,7 +224,7 @@ uint32_t READ_CODE
 
 bool READ_FLAG
 (
-    char *name
+    const char *name
 )
 {
     bool ret;
@@ -242,7 +239,7 @@ bool READ_FLAG
 
 uint32_t READ_UVLC
 (
-    char *name
+    const char *name
 )
 {
     uint32_t ret;
@@ -257,7 +254,7 @@ uint32_t READ_UVLC
 
 int32_t READ_SVLC
 (
-    char *name
+    const char *name
 )
 {
     int32_t ret;
