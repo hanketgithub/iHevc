@@ -1,17 +1,17 @@
-sources = main.c bits.c
-objects = $(patsubst %.c,%.o,$(sources))
-CC = gcc
+sources = main.cpp bits.cpp
+objects = $(patsubst %.cpp,%.o,$(sources))
+CPP = g++
 OPTS = -Wall
 PROG = iHevc
 
 $(PROG): $(objects)
-	$(CC) $(OPTS) -o $@ $(objects)
+	$(CPP) $(OPTS) -o $@ $(objects)
 
-main.o: main.c
-	$(CC) -c $<
+main.o: main.cpp
+	$(CPP) -c $<
 
-bits.o: bits.c
-	$(CC) $(OPTS) -c $<
+bits.o: bits.cpp
+	$(CPP) $(OPTS) -c $<
 
 clean:
 	$(RM) $(PROG) $(objects)
