@@ -1606,3 +1606,57 @@ void ParseSliceHeader(NalUnitType nal_unit_type, string &message)
     message += " " + s + "\n";
 }
 
+
+uint32_t ParseSEI
+(
+    SeiType     *payloadType,
+    uint8_t     *payloadSize,
+    PicStruct   *picStruct
+)
+{
+    uint32_t ret = 0;
+
+    *payloadType = (SeiType) READ_CODE(8, "payloadType");
+    *payloadSize = (uint8_t) READ_CODE(8, "payloadSize");
+
+    switch (*payloadType)
+    {
+        case SEI_BUFFERING_PERIOD:
+        {
+            //PAR_TRACE("Buffering Period: ");
+            for (uint8_t i = 0; i < (*payloadSize); i++)
+            {
+                uint8_t byte;
+                byte = (uint8_t) READ_CODE(8, "");
+                //PAR_TRACE("0x%02x ", byte);
+            }
+            //PAR_TRACE("\n");
+            *payloadType = (SeiType) READ_CODE(8, "payloadType");
+            *payloadSize = (uint8_t) READ_CODE(8, "payloadSize");
+
+            if (*payloadType == SEI_PICTURE_TIMING)
+            {
+                *picStruct = (PicStruct) READ_CODE(4, "picStruct");
+            }
+
+            break;
+        }
+        case SEI_PICTURE_TIMING:
+        {
+            *picStruct = (PicStruct) READ_CODE(4, "picStruct");
+            break;
+        }
+        case SEI_TIME_CODE:
+        {
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+
+    return ret;
+}
+
+

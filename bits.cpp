@@ -205,11 +205,14 @@ static uint32_t pseudo_read
     return retVal;
 }
 
+#include <string>
+
+using namespace std;
 
 uint32_t READ_CODE
 (
     uint32_t length, 
-    char    *name
+    char *name
 )
 {
     uint32_t ret;

@@ -368,6 +368,19 @@ int main(int argc, const char * argv[])
 
                 break;
             }
+            case NAL_UNIT_PREFIX_SEI:
+            {
+                EBSPtoRBSP(&u8EsBuffer[offset + prefix_len], nal_len, 0);
+
+                SeiType sei_payload_type = SEI_BUFFERING_PERIOD;
+                uint8_t sei_payload_size = 0;
+                PicStruct pic_struct = PIC_STRUCT_FRAME;
+
+        
+                ParseSEI(&sei_payload_type, &sei_payload_size, &pic_struct);
+                
+                break;
+            }
             default:
             {
                 break;

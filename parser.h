@@ -15,7 +15,12 @@ extern void ParseAUD();
 
 extern void ParseSliceHeader(NalUnitType nal_unit_type, std::string &message);
 
-
+extern uint32_t ParseSEI
+(
+    SeiType     *payloadType,
+    uint8_t     *payloadSize,
+    PicStruct   *picStruct
+);
 
 
 #endif

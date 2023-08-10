@@ -124,12 +124,45 @@ typedef enum
 
 typedef enum
 {
+    SEI_BUFFERING_PERIOD                     = 0,
+    SEI_PICTURE_TIMING                       = 1,
+    SEI_PAN_SCAN_RECT                        = 2,
+    SEI_FILLER_PAYLOAD                       = 3,
+    SEI_USER_DATA_REGISTERED_ITU_T_T35       = 4,
+    SEI_USER_DATA_UNREGISTERED               = 5,
+    SEI_RECOVERY_POINT                       = 6,
+    SEI_SCENE_INFO                           = 9,
+    SEI_FULL_FRAME_SNAPSHOT                  = 15,
+    SEI_PROGRESSIVE_REFINEMENT_SEGMENT_START = 16,
+    SEI_PROGRESSIVE_REFINEMENT_SEGMENT_END   = 17,
+    SEI_FILM_GRAIN_CHARACTERISTICS           = 19,
+    SEI_POST_FILTER_HINT                     = 22,
+    SEI_TONE_MAPPING_INFO                    = 23,
+    SEI_FRAME_PACKING                        = 45,
+    SEI_DISPLAY_ORIENTATION                  = 47,
+    SEI_SOP_DESCRIPTION                      = 128,
+    SEI_ACTIVE_PARAMETER_SETS                = 129,
+    SEI_DECODING_UNIT_INFO                   = 130,
+    SEI_TEMPORAL_LEVEL0_INDEX                = 131,
+    SEI_DECODED_PICTURE_HASH                 = 132,
+    SEI_SCALABLE_NESTING                     = 133,
+    SEI_REGION_REFRESH_INFO                  = 134,
+    SEI_TIME_CODE                            = 136,
+} SeiType;
+
+typedef enum
+{
     B_SLICE,
     P_SLICE,
     I_SLICE,
 } SliceType;
 
-
+typedef enum
+{
+    PIC_STRUCT_FRAME,
+    PIC_STRUCT_FIELD_TOP,
+    PIC_STRUCT_FIELD_BOT,
+} PicStruct;
 
 
 typedef struct

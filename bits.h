@@ -27,7 +27,7 @@ extern InputBitstream_t m_pcBitstream;
 uint32_t READ_CODE
 (
     uint32_t length, 
-    char    *name
+    char *name
 );
 
 
