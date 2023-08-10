@@ -1,5 +1,14 @@
+//
+//  parser.cpp
+//  iHevc
+//
+//  Created by Hank Lee on 2023/8/10.
+//  Copyright (c) 2023 Hank Lee. All rights reserved.
+//
 
-
+/******************************
+ * include
+ */
 
 #include <assert.h>
 #include <stdbool.h>
@@ -8,12 +17,15 @@
 #include <string.h>
 
 #include <algorithm>
+#include <string>
+
 
 #include "common.h"
 #include "bits.h"
 
 
 using namespace std;
+
 
 /******************************
  * local function prototype
@@ -49,6 +61,8 @@ static Slice_t slice;
 static uint32_t ScalingList[4][6][64];
 
 static bool sub_pic_hrd_params_present_flag;
+
+static uint32_t u32frameCnt;
 
 
 /******************************
@@ -514,8 +528,6 @@ static void parse_sub_layer_hrd_params(uint32_t CpbCnt)
     }
 }
 
-
-
 static void createRPSList(SPS_t *pSPS, uint32_t numRPS)
 { 
     pSPS->m_RPSList.m_numberOfReferencePictureSets  = numRPS;
@@ -542,8 +554,6 @@ static uint32_t getNumRpsCurrTempList(Slice_t *pSlice)
     
     return numRpsCurrTempList;
 }
-
-
 
 static void pred_weight_table(SPS_t *pSPS)
 {
@@ -1206,7 +1216,7 @@ void ParseAUD()
 }
 
 
-void ParseSliceHeader(NalUnitType nal_unit_type)
+void ParseSliceHeader(NalUnitType nal_unit_type, string &message)
 {
     bool        first_slice_segment_in_pic_flag;
     bool        no_output_of_prior_pics_flag;
@@ -1570,28 +1580,29 @@ void ParseSliceHeader(NalUnitType nal_unit_type)
     slice.m_numEntryPointOffsets            = num_entry_point_offsets;
     slice.m_enableTMVPFlag                  = slice_temporal_mvp_enabled_flag;
 
-    char *p_str;
+    string s;
 
     switch (slice_type)
     {
         case I_SLICE:
         {
-            p_str = "I Frame";
+            s = "I Frame";
             break;
         }
         case P_SLICE:
         {
-            p_str = "P Frame";
+            s = "P Frame";
             break;
         }
         case B_SLICE:
         default:
         {
-            p_str = "B Frame";
+            s = "B Frame";
             break;
         }
     }
 
-    //pInfo += sprintf(pInfo, "[%4d] %s\n", u32frameCnt++, p_str);
+    message += to_string(u32frameCnt++);
+    message += " " + s + "\n";
 }
 

@@ -13,7 +13,7 @@ extern void ParsePPS(void);
 
 extern void ParseAUD();
 
-extern void ParseSliceHeader(NalUnitType nal_unit_type);
+extern void ParseSliceHeader(NalUnitType nal_unit_type, std::string &message);
 
 
 

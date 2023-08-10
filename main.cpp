@@ -20,10 +20,17 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-       
+
+#include <iostream>
+#include <string>
+      
 #include "common.h"
 #include "parser.h"
 #include "bits.h"
+
+
+using namespace std;
+
 
 
 /******************************
@@ -31,13 +38,6 @@
  */
 #define SIZE_OF_NAL_UNIT_HDR    2
 #define ES_BUFFER_SIZE          (3840 * 2160)
-
-#define min(a, b) (((a) < (b)) ? (a) : (b))
-#define max(a, b) (((a) > (b)) ? (a) : (b))
-
-
-
-
 
 static uint8_t u8endCode[] = { 0xFC, 0xFD, 0xFE, 0xFF };
 
@@ -47,11 +47,7 @@ static VPS_t vps;
 
 static HevcInfo_t tHevcInfo;
 
-static char frameInfo[0x10000];
-static char *pInfo = frameInfo;
-
-static uint32_t u32frameCnt;
-
+string message;
 
 /******************************
  * local function
@@ -368,7 +364,7 @@ int main(int argc, const char * argv[])
             {
                 EBSPtoRBSP(&u8EsBuffer[offset + prefix_len], nal_len, 0);
 
-                ParseSliceHeader(nal_unit_type);
+                ParseSliceHeader(nal_unit_type, message);
 
                 break;
             }
@@ -385,7 +381,7 @@ int main(int argc, const char * argv[])
 
     fprintf(stderr, "Resolution: %d x %d\n", tHevcInfo.u32Width, tHevcInfo.u32Height);
 
-    fprintf(stderr, frameInfo);
+    cout << message << endl;;
     
     return 0;
 }
