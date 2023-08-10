@@ -1,9 +1,9 @@
 //
-//  bits.c
+//  bits.cpp
 //  iHevc
 //
-//  Created by hank on 2015/8/31.
-//  Copyright (c) 2015 hank. All rights reserved.
+//  Created by Hank Lee on 2023/8/10.
+//  Copyright (c) 2023 hank. All rights reserved.
 //
 
 #include <assert.h>

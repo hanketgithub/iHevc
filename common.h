@@ -2,7 +2,7 @@
 //  common.h
 //  iHevc
 //
-//  Created by hank on 2015/8/31.
+//  Created by Hank Lee on 2015/8/31.
 //  Copyright (c) 2015 hank. All rights reserved.
 //
 
@@ -131,6 +131,12 @@ typedef enum
 
 
 
+
+typedef struct
+{
+    uint32_t u32Width;
+    uint32_t u32Height;
+} HevcInfo_t;
 
 typedef struct
 {
