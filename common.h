@@ -100,6 +100,7 @@ typedef enum
     NAL_UNIT_INVALID,
 } NalUnitType;
 
+
 typedef enum
 {
     ASPECT_RATIO_UNSPECIFIED    = 0,
@@ -121,6 +122,7 @@ typedef enum
     ASPECT_RATIO_2_1,
     ASPECT_RATIO_EXTENDED_SAR   = 255,
 } AspectRatioIdc;
+
 
 typedef enum
 {
@@ -150,12 +152,14 @@ typedef enum
     SEI_TIME_CODE                            = 136,
 } SeiType;
 
+
 typedef enum
 {
     B_SLICE,
     P_SLICE,
     I_SLICE,
 } SliceType;
+
 
 typedef enum
 {
@@ -171,6 +175,7 @@ typedef struct
     uint32_t u32Height;
 } HevcInfo_t;
 
+
 typedef struct
 {
     uint32_t    m_bRefPicListModificationFlagL0;  
@@ -178,6 +183,7 @@ typedef struct
     uint32_t    m_RefPicSetIdxL0[32];
     uint32_t    m_RefPicSetIdxL1[32];
 } RefPicListModification_t;
+
 
 typedef struct
 {
@@ -190,17 +196,20 @@ typedef struct
     
 } ReferencePictureSet_t;
 
+
 typedef struct
 {
     uint32_t                m_numberOfReferencePictureSets;
     
-    ReferencePictureSet_t   *m_referencePictureSets;
+    ReferencePictureSet_t  *m_referencePictureSets;
 } RPSList_t;
+
 
 typedef struct
 {
     uint32_t    m_VPSId;
 } VPS_t;
+
 
 typedef struct 
 {
@@ -225,6 +234,7 @@ typedef struct
 
     bool        m_bUseSAO;
 } SPS_t;
+
 
 typedef struct
 {
@@ -259,6 +269,7 @@ typedef struct
     
     bool        m_listsModificationPresentFlag;
 } PPS_t;
+
 
 typedef struct
 {
@@ -295,5 +306,6 @@ typedef struct
 
     bool        m_enableTMVPFlag;
 } Slice_t;
+
 
 #endif

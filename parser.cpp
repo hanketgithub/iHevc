@@ -1648,6 +1648,39 @@ uint32_t ParseSEI
         }
         case SEI_TIME_CODE:
         {
+            uint8_t num_clock_ts = READ_CODE(2, "num_clock_ts");
+
+            bool clock_timestamp_flag[num_clock_ts];
+            bool units_field_based_flag[num_clock_ts];
+            uint8_t counting_type[num_clock_ts];
+            bool full_timestamp_flag[num_clock_ts];
+            bool discontinuity_flag[num_clock_ts];
+            bool cnt_dropped_flag[num_clock_ts];
+            uint16_t n_frames[num_clock_ts];
+            uint8_t seconds_value[num_clock_ts];
+            uint8_t minutes_value[num_clock_ts];
+            uint8_t hours_value[num_clock_ts];
+            
+            for (int i = 0; i < num_clock_ts; i++)
+            {
+                clock_timestamp_flag[i] = READ_FLAG("clock_timestamp_flag");
+                if (clock_timestamp_flag[i])
+                {
+                    units_field_based_flag[i]   = READ_FLAG("units_field_based_flag");
+                    counting_type[i]            = READ_CODE(5, "counting_type");
+                    full_timestamp_flag[i]      = READ_FLAG("full_timestamp_flag");
+                    discontinuity_flag[i]       = READ_FLAG("discontinuity_flag");
+                    cnt_dropped_flag[i]         = READ_FLAG("cnt_dropped_flag");
+                    n_frames[i]                 = READ_CODE(9, "n_frames");
+                    if (full_timestamp_flag[i])
+                    {
+                        seconds_value[i] = READ_CODE(6, "seconds_value");
+                        minutes_value[i] = READ_CODE(6, "minutes_value");
+                        hours_value[i] = READ_CODE(5, "hours_value");
+                    }
+                }
+            }
+
             break;
         }
         default:

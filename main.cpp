@@ -23,6 +23,7 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
       
 #include "common.h"
 #include "parser.h"
@@ -218,8 +219,59 @@ bool fill_es_buffer
     return true;
 }
 
+void test_timecode_sei()
+{
+    OutputBitstream_t bitstream;
+
+    printf("hello\n");
+
+    WRITE_CODE(&bitstream, 1, 2);   // num_clock_ts
+    WRITE_CODE(&bitstream, 1, 1);   // clock_timestamp_flag
+    WRITE_CODE(&bitstream, 0, 1);   // units_field_based_flag
+    WRITE_CODE(&bitstream, 0, 5);   // counting_type
+    WRITE_CODE(&bitstream, 1, 1);   // full_timestamp_flag
+    WRITE_CODE(&bitstream, 0, 1);   // discontinuity_flag
+    WRITE_CODE(&bitstream, 0, 1);   // cnt_dropped_flag
+    WRITE_CODE(&bitstream, 0, 9);   // n_frames
+    WRITE_CODE(&bitstream, 5, 6);   // SS
+    WRITE_CODE(&bitstream, 10, 6);  // MM
+    WRITE_CODE(&bitstream, 15, 5);  // HH
+    WRITE_CODE(&bitstream, 0, 5);   // time_offset_length
+    WRITE_CODE(&bitstream, 0, 32);  // done
+
+    cout << bitstream.m_fifo.size() << endl;
+
+    vector<uint8_t> sei;
+
+    // Write short start code
+    sei.insert(sei.end(), {0x00, 0x00, 0x01} );
+    // Wrrite SEI NAL header
+    sei.insert(sei.end(), {0x4E, 0x01} );
+    // Write payload type
+    sei.push_back(SEI_TIME_CODE);
+    // Wtite payload size
+    sei.push_back( bitstream.m_fifo.size() );
+
+    for (auto v : bitstream.m_fifo)
+    {
+        sei.push_back(v);
+    }
+
+    
+    for (auto v : sei)
+    {
+        printf("0x%02x\n", v);
+    }
+}
+
+
 int main(int argc, const char * argv[])
 {
+#if 0
+    test_timecode_sei();
+#else
+
+
     int fd;
     ssize_t rd_sz;
         
@@ -395,7 +447,8 @@ int main(int argc, const char * argv[])
     fprintf(stderr, "Resolution: %d x %d\n", tHevcInfo.u32Width, tHevcInfo.u32Height);
 
     cout << message << endl;;
-    
+#endif
+
     return 0;
 }
 
