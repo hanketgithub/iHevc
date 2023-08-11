@@ -359,12 +359,21 @@ static void write_bits(OutputBitstream_t *bitstream, uint32_t uiBits, uint32_t u
 
 void WRITE_CODE
 (
-        OutputBitstream_t *bitstream,
-        uint32_t uiCode,
-        uint32_t uiLength
+    OutputBitstream_t *bitstream,
+    uint32_t uiCode,
+    uint32_t uiLength
 )
 {
     write_bits(bitstream, uiCode, uiLength);
 }
 
+
+void WRITE_FLAG
+(
+    OutputBitstream_t *bitstream,
+    bool flag
+)
+{
+    write_bits(bitstream, flag, 1);
+}
 

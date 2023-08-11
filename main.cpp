@@ -223,15 +223,13 @@ void test_timecode_sei()
 {
     OutputBitstream_t bitstream;
 
-    printf("hello\n");
-
     WRITE_CODE(&bitstream, 1, 2);   // num_clock_ts
-    WRITE_CODE(&bitstream, 1, 1);   // clock_timestamp_flag
-    WRITE_CODE(&bitstream, 0, 1);   // units_field_based_flag
+    WRITE_FLAG(&bitstream, true);   // clock_timestamp_flag
+    WRITE_FLAG(&bitstream, false);  // units_field_based_flag
     WRITE_CODE(&bitstream, 0, 5);   // counting_type
-    WRITE_CODE(&bitstream, 1, 1);   // full_timestamp_flag
+    WRITE_FLAG(&bitstream, true);   // full_timestamp_flag
     WRITE_CODE(&bitstream, 0, 1);   // discontinuity_flag
-    WRITE_CODE(&bitstream, 0, 1);   // cnt_dropped_flag
+    WRITE_FLAG(&bitstream, false);  // cnt_dropped_flag
     WRITE_CODE(&bitstream, 0, 9);   // n_frames
     WRITE_CODE(&bitstream, 5, 6);   // SS
     WRITE_CODE(&bitstream, 10, 6);  // MM

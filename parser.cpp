@@ -1623,6 +1623,11 @@ uint32_t ParseSEI
     {
         case SEI_BUFFERING_PERIOD:
         {
+            //
+            // Ref:
+            // ISO/IEC 23008-2:2015(E)
+            // D.2.2
+            //
             //PAR_TRACE("Buffering Period: ");
             for (uint8_t i = 0; i < (*payloadSize); i++)
             {
@@ -1643,11 +1648,21 @@ uint32_t ParseSEI
         }
         case SEI_PICTURE_TIMING:
         {
+            //
+            // Ref:
+            // ISO/IEC 23008-2:2015(E)
+            // D.2.3
+            //
             *picStruct = (PicStruct) READ_CODE(4, "picStruct");
             break;
         }
         case SEI_TIME_CODE:
         {
+            //
+            // Ref:
+            // ISO/IEC 23008-2:2015(E)
+            // D.2.26
+            //
             uint8_t num_clock_ts = READ_CODE(2, "num_clock_ts");
 
             bool clock_timestamp_flag[num_clock_ts];

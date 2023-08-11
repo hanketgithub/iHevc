@@ -70,9 +70,16 @@ bool MORE_RBSP_DATA
 
 void WRITE_CODE
 (
-        OutputBitstream_t *bitstream,
-        uint32_t uiCode,
-        uint32_t uiLength
+    OutputBitstream_t *bitstream,
+    uint32_t uiCode,
+    uint32_t uiLength
+);
+
+
+void WRITE_FLAG
+(
+    OutputBitstream_t *bitstream,
+    bool flag
 );
 
 #endif
