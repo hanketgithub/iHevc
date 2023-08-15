@@ -29,26 +29,23 @@ int dbg = 1;
         fprintf(stdout, fmt, name, len, val);
 
 
-InputBitstream_t m_pcBitstream;
+static int32_t  read_svlc(InputBitstream_t &bitstream);
 
-static int32_t  read_svlc(void);
+static uint32_t read_uvlc(InputBitstream_t &bitstream);
 
-static uint32_t read_uvlc(void);
+static uint32_t read_bits(InputBitstream_t &bitstream, uint32_t uiNumberOfBits);
 
-static uint32_t read_bits
-(
-    uint32_t uiNumberOfBits
-);
-
-static uint32_t get_num_bits_left(void);
+static uint32_t get_num_bits_left(InputBitstream_t &bitstream);
 
 static uint32_t peek_bits
 (
+    InputBitstream_t &bitstream,
     uint32_t uiBits
 );
 
 static uint32_t pseudo_read
-( 
+(
+    InputBitstream_t &bitstream,
     uint32_t uiNumberOfBits
 );
 
@@ -60,7 +57,7 @@ static void write_bits
 );
 
 
-static int32_t read_svlc(void)
+static int32_t read_svlc(InputBitstream_t &bitstream)
 {
     uint32_t leadingZeroBits = (uint32_t) -1;
     uint32_t kplus1 = 0;        // k is the codeNum in uvlc
@@ -69,17 +66,17 @@ static int32_t read_svlc(void)
     
     for (b = 0; !b; leadingZeroBits++)
     {
-        b = (bool) (read_bits(1) & 0x01);
+        b = (bool) (read_bits(bitstream, 1) & 0x01);
     }
     
-    kplus1 = (1 << leadingZeroBits) + read_bits(leadingZeroBits);
+    kplus1 = (1 << leadingZeroBits) + read_bits(bitstream, leadingZeroBits);
 
     codeNum = (kplus1 & 1) ? - (int32_t) (kplus1 >> 1) : (int32_t) (kplus1 >> 1);
     
     return codeNum;    
 }
 
-static uint32_t read_uvlc(void)
+static uint32_t read_uvlc(InputBitstream_t &bitstream)
 {
     /* coding according to 9-1 */
     uint32_t leadingZeroBits = (uint32_t) -1;
@@ -88,10 +85,10 @@ static uint32_t read_uvlc(void)
     
     for (b = 0; !b; leadingZeroBits++)
     {
-        b = (bool) (read_bits(1) & 0x01);
+        b = (bool) (read_bits(bitstream, 1) & 0x01);
     }
     
-    codeNum = (1 << leadingZeroBits) - 1 + read_bits(leadingZeroBits);
+    codeNum = (1 << leadingZeroBits) - 1 + read_bits(bitstream, leadingZeroBits);
     
     return codeNum;
 }
@@ -102,23 +99,23 @@ static uint32_t read_uvlc(void)
  *
  * read_bits(n) in H.265 spec
  */
-static uint32_t read_bits(uint32_t uiNumberOfBits)
+static uint32_t read_bits(InputBitstream_t &bitstream, uint32_t uiNumberOfBits)
 {
     //assert(uiNumberOfBits <= 32);
     
-    m_pcBitstream.m_numBitsRead += uiNumberOfBits;
+    bitstream.m_numBitsRead += uiNumberOfBits;
     
     /* NB, bits are extracted from the MSB of each byte. */
     uint32_t retval = 0;
     
-    if (uiNumberOfBits <= m_pcBitstream.m_num_held_bits)
+    if (uiNumberOfBits <= bitstream.m_num_held_bits)
     {
         /* n=1, len(H)=7:   -VHH HHHH, shift_down=6, mask=0xfe
          * n=3, len(H)=7:   -VVV HHHH, shift_down=4, mask=0xf8
          */
-        retval = m_pcBitstream.m_held_bits >> (m_pcBitstream.m_num_held_bits - uiNumberOfBits);
+        retval = bitstream.m_held_bits >> (bitstream.m_num_held_bits - uiNumberOfBits);
         retval &= ~(0xff << uiNumberOfBits);
-        m_pcBitstream.m_num_held_bits -= uiNumberOfBits;
+        bitstream.m_num_held_bits -= uiNumberOfBits;
         
         return retval;
     }
@@ -128,8 +125,8 @@ static uint32_t read_bits(uint32_t uiNumberOfBits)
      *   => align retval with top of extracted word */
     /* n=5, len(H)=3: ---- -VVV, mask=0x07, shift_up=5-3=2,
      * n=9, len(H)=3: ---- -VVV, mask=0x07, shift_up=9-3=6 */
-    uiNumberOfBits -= m_pcBitstream.m_num_held_bits;
-    retval = m_pcBitstream.m_held_bits & ~(0xff << m_pcBitstream.m_num_held_bits);
+    uiNumberOfBits -= bitstream.m_num_held_bits;
+    retval = bitstream.m_held_bits & ~(0xff << bitstream.m_num_held_bits);
     retval <<= uiNumberOfBits;
     
     /* number of whole bytes that need to be loaded to form retval */
@@ -147,10 +144,10 @@ static uint32_t read_bits(uint32_t uiNumberOfBits)
     
     switch (num_bytes_to_load)
     {
-        case 3: aligned_word  = (m_pcBitstream.m_fifo)[m_pcBitstream.m_fifo_idx++] << 24;
-        case 2: aligned_word |= (m_pcBitstream.m_fifo)[m_pcBitstream.m_fifo_idx++] << 16;
-        case 1: aligned_word |= (m_pcBitstream.m_fifo)[m_pcBitstream.m_fifo_idx++] << 8;
-        case 0: aligned_word |= (m_pcBitstream.m_fifo)[m_pcBitstream.m_fifo_idx++];
+        case 3: aligned_word  = (bitstream.m_fifo)[bitstream.m_fifo_idx++] << 24;
+        case 2: aligned_word |= (bitstream.m_fifo)[bitstream.m_fifo_idx++] << 16;
+        case 1: aligned_word |= (bitstream.m_fifo)[bitstream.m_fifo_idx++] << 8;
+        case 0: aligned_word |= (bitstream.m_fifo)[bitstream.m_fifo_idx++];
     }
     
     /* resolve remainder bits */
@@ -160,25 +157,26 @@ static uint32_t read_bits(uint32_t uiNumberOfBits)
     retval |= aligned_word >> next_num_held_bits;
     
     /* store held bits */
-    m_pcBitstream.m_num_held_bits = next_num_held_bits;
-    m_pcBitstream.m_held_bits = (uint8_t) (aligned_word & 0xFF);
+    bitstream.m_num_held_bits = next_num_held_bits;
+    bitstream.m_held_bits = (uint8_t) (aligned_word & 0xFF);
     
     return retval;
 }
 
 
-static uint32_t get_num_bits_left(void) 
+static uint32_t get_num_bits_left(InputBitstream_t &bitstream) 
 { 
-    return 8 * (m_pcBitstream.m_fifo_size - m_pcBitstream.m_fifo_idx) + m_pcBitstream.m_num_held_bits;
+    return 8 * (bitstream.m_fifo_size - bitstream.m_fifo_idx) + bitstream.m_num_held_bits;
 }
 
 
 static uint32_t peek_bits
 (
+    InputBitstream_t &bitstream,
     uint32_t uiBits
 )
 {
-    return pseudo_read(uiBits);
+    return pseudo_read(bitstream, uiBits);
 }
 
 
@@ -187,7 +185,8 @@ static uint32_t peek_bits
  *
  */
 static uint32_t pseudo_read
-( 
+(
+    InputBitstream_t &bitstream,
     uint32_t uiNumberOfBits
 )
 {
@@ -197,20 +196,20 @@ static uint32_t pseudo_read
 
     uint32_t retVal;
     
-    uint32_t num_bits_to_read = min(uiNumberOfBits, get_num_bits_left());
+    uint32_t num_bits_to_read = min(uiNumberOfBits, get_num_bits_left(bitstream));
 
 
-    saved_num_held_bits = m_pcBitstream.m_num_held_bits;
-    saved_held_bits     = m_pcBitstream.m_held_bits;
-    saved_fifo_idx      = m_pcBitstream.m_fifo_idx;
+    saved_num_held_bits = bitstream.m_num_held_bits;
+    saved_held_bits     = bitstream.m_held_bits;
+    saved_fifo_idx      = bitstream.m_fifo_idx;
     
-    retVal = read_bits(num_bits_to_read);
+    retVal = read_bits(bitstream, num_bits_to_read);
 
     retVal <<= (uiNumberOfBits - num_bits_to_read);
     
-    m_pcBitstream.m_fifo_idx      = saved_fifo_idx;
-    m_pcBitstream.m_held_bits     = saved_held_bits;
-    m_pcBitstream.m_num_held_bits = saved_num_held_bits;
+    bitstream.m_fifo_idx      = saved_fifo_idx;
+    bitstream.m_held_bits     = saved_held_bits;
+    bitstream.m_num_held_bits = saved_num_held_bits;
 
     return retVal;
 }
@@ -218,13 +217,14 @@ static uint32_t pseudo_read
 
 uint32_t READ_CODE
 (
+    InputBitstream_t &bitstream,
     uint32_t length, 
     const char *name
 )
 {
     uint32_t ret;
     
-    ret = read_bits(length);
+    ret = read_bits(bitstream, length);
 
     TRACE_4("%-50s u(%d)  : %u\n", name, length, ret);
 
@@ -234,12 +234,13 @@ uint32_t READ_CODE
 
 bool READ_FLAG
 (
+    InputBitstream_t &bitstream,
     const char *name
 )
 {
     bool ret;
 
-    ret = (bool) (read_bits(1) & 0x01);
+    ret = (bool) (read_bits(bitstream, 1) & 0x01);
     
     TRACE("%-50s u(1)  : %u\n", name, ret);
 
@@ -249,12 +250,13 @@ bool READ_FLAG
 
 uint32_t READ_UVLC
 (
+    InputBitstream_t &bitstream,
     const char *name
 )
 {
     uint32_t ret;
 
-    ret = read_uvlc();
+    ret = read_uvlc(bitstream);
 
     TRACE("%-50s ue(v) : %u\n", name, ret);
 
@@ -264,12 +266,13 @@ uint32_t READ_UVLC
 
 int32_t READ_SVLC
 (
+    InputBitstream_t &bitstream,
     const char *name
 )
 {
     int32_t ret;
     
-    ret = read_svlc();
+    ret = read_svlc(bitstream);
     
     TRACE("%-50s se(v) : %d\n", name, ret);
     
@@ -277,9 +280,9 @@ int32_t READ_SVLC
 }
 
 
-bool MORE_RBSP_DATA(void)
+bool MORE_RBSP_DATA(InputBitstream_t &bitstream)
 { 
-    int bitsLeft = get_num_bits_left();
+    int bitsLeft = get_num_bits_left(bitstream);
     
     // if there are more than 8 bits, it cannot be rbsp_trailing_bits
     if (bitsLeft > 8)
@@ -287,7 +290,7 @@ bool MORE_RBSP_DATA(void)
         return true;
     }
     
-    uint8_t lastByte = peek_bits(bitsLeft);
+    uint8_t lastByte = peek_bits(bitstream, bitsLeft);
     int cnt = bitsLeft;
     
     // remove trailing bits equal to zero

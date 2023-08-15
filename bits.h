@@ -17,6 +17,7 @@ typedef struct
     uint32_t m_numBitsRead;
 
     uint8_t *m_fifo;
+    //std::vector<uint8_t> m_fifo;
     uint32_t m_fifo_idx;
     uint32_t m_fifo_size;
 } InputBitstream_t;
@@ -34,11 +35,9 @@ typedef struct
 } OutputBitstream_t;
 
 
-extern InputBitstream_t m_pcBitstream;
-
-
 uint32_t READ_CODE
 (
+    InputBitstream_t &bitstream,
     uint32_t length, 
     const char *name
 );
@@ -46,25 +45,28 @@ uint32_t READ_CODE
 
 bool READ_FLAG
 (
+    InputBitstream_t &bitstream,
     const char *name
 );
 
 
 uint32_t READ_UVLC
 (
+    InputBitstream_t &bitstream,
     const char *name
 );
 
 
 int32_t READ_SVLC
 (
+    InputBitstream_t &bitstream,
     const char *name
 );
 
 
 bool MORE_RBSP_DATA
 (
-    void
+    InputBitstream_t &bitstream
 );
 
 

@@ -5,18 +5,23 @@
 
 
 
-extern void ParseVPS(VPS_t *pVPS);
+extern void ParseVPS
+(
+    InputBitstream_t &bitstream,
+    VPS_t *pVPS
+);
 
-extern void ParseSPS(HevcInfo_t *pHevcInfo);
+extern void ParseSPS(InputBitstream_t &bitstream, HevcInfo_t *pHevcInfo);
 
-extern void ParsePPS(void);
+extern void ParsePPS(InputBitstream_t &bitstream);
 
-extern void ParseAUD();
+extern void ParseAUD(InputBitstream_t &bitstream);
 
-extern void ParseSliceHeader(NalUnitType nal_unit_type, std::string &message);
+extern void ParseSliceHeader(InputBitstream_t &bitstream, NalUnitType nal_unit_type, std::string &message);
 
 extern uint32_t ParseSEI
 (
+    InputBitstream_t &bitstream,
     SeiType     *payloadType,
     uint8_t     *payloadSize,
     PicStruct   *picStruct

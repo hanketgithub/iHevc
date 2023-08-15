@@ -260,13 +260,13 @@ void test_timecode_sei()
 
 int main(int argc, const char * argv[])
 {
-#if 1
+#if 0
     test_timecode_sei();
 #else
-
-
     int fd;
     ssize_t rd_sz;
+    InputBitstream_t m_pcBitstream;
+
         
     if (argc < 2)
     {
@@ -348,13 +348,14 @@ int main(int argc, const char * argv[])
                nal_len,
                offset);
         
-        
-        m_pcBitstream.m_fifo            = &u8EsBuffer[offset + prefix_len + SIZE_OF_NAL_UNIT_HDR];
-        m_pcBitstream.m_fifo_size       = nal_len - prefix_len - SIZE_OF_NAL_UNIT_HDR;
-        m_pcBitstream.m_fifo_idx        = 0;
-        m_pcBitstream.m_num_held_bits   = 0;
-        m_pcBitstream.m_held_bits       = 0;
-        m_pcBitstream.m_numBitsRead     = 0;
+        InputBitstream_t bitstream;
+
+        bitstream.m_fifo            = &u8EsBuffer[offset + prefix_len + SIZE_OF_NAL_UNIT_HDR];
+        bitstream.m_fifo_size       = nal_len - prefix_len - SIZE_OF_NAL_UNIT_HDR;
+        bitstream.m_fifo_idx        = 0;
+        bitstream.m_num_held_bits   = 0;
+        bitstream.m_held_bits       = 0;
+        bitstream.m_numBitsRead     = 0;
         
         switch (nal_unit_type)
         {
@@ -362,7 +363,7 @@ int main(int argc, const char * argv[])
             {             
                 EBSPtoRBSP(&u8EsBuffer[offset + prefix_len], nal_len, 0);
                 
-                ParseVPS(&vps);
+                ParseVPS(bitstream, &vps);
                 
                 break;
             }
@@ -370,7 +371,7 @@ int main(int argc, const char * argv[])
             {              
                 EBSPtoRBSP(&u8EsBuffer[offset + prefix_len], nal_len, 0);
                 
-                ParseSPS(&tHevcInfo);
+                ParseSPS(bitstream, &tHevcInfo);
                 
                 break;
             }
@@ -378,7 +379,7 @@ int main(int argc, const char * argv[])
             {
                 EBSPtoRBSP(&u8EsBuffer[offset + prefix_len], nal_len, 0);
                 
-                ParsePPS();
+                ParsePPS(bitstream);
                 
                 break;
             }
@@ -386,7 +387,7 @@ int main(int argc, const char * argv[])
             {
                 EBSPtoRBSP(&u8EsBuffer[offset + prefix_len], nal_len, 0);
 
-                ParseAUD();
+                ParseAUD(bitstream);
                 
                 break;
             }
@@ -409,7 +410,7 @@ int main(int argc, const char * argv[])
             {
                 EBSPtoRBSP(&u8EsBuffer[offset + prefix_len], nal_len, 0);
 
-                ParseSliceHeader(nal_unit_type, message);
+                ParseSliceHeader(bitstream, nal_unit_type, message);
 
                 break;
             }
@@ -422,7 +423,7 @@ int main(int argc, const char * argv[])
                 PicStruct pic_struct = PIC_STRUCT_FRAME;
 
         
-                ParseSEI(&sei_payload_type, &sei_payload_size, &pic_struct);
+                ParseSEI(bitstream, &sei_payload_type, &sei_payload_size, &pic_struct);
                 
                 break;
             }
