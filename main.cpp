@@ -230,7 +230,7 @@ void test_timecode_sei()
     uint8_t minutes = 10;
     uint8_t hours =  15;
 
-    WriteTimecodeSEI(&bitstream, num_clock_ts, n_frames, seconds, minutes, hours);
+    WriteTimecodeSEI(bitstream, num_clock_ts, n_frames, seconds, minutes, hours);
     
     cout << bitstream.m_fifo.size() << endl;
 
@@ -260,13 +260,11 @@ void test_timecode_sei()
 
 int main(int argc, const char * argv[])
 {
-#if 0
+#if 1
     test_timecode_sei();
 #else
     int fd;
     ssize_t rd_sz;
-    InputBitstream_t m_pcBitstream;
-
         
     if (argc < 2)
     {

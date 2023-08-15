@@ -51,7 +51,7 @@ static uint32_t pseudo_read
 
 static void write_bits
 (
-    OutputBitstream_t *bitstream,
+    OutputBitstream_t &bitstream,
     uint32_t uiBits,
     uint32_t uiNumberOfBits
 );
@@ -316,11 +316,11 @@ bool MORE_RBSP_DATA(InputBitstream_t &bitstream)
  * Append uiNumberOfBits least significant bits of uiBits to the current bitstream
  #
  */
-static void write_bits(OutputBitstream_t *bitstream, uint32_t uiBits, uint32_t uiNumberOfBits)
+static void write_bits(OutputBitstream_t &bitstream, uint32_t uiBits, uint32_t uiNumberOfBits)
 {
     /* any modulo 8 remainder of num_total_bits cannot be written this time,
      * and will be held until next time. */
-    uint32_t num_total_bits = uiNumberOfBits + bitstream->m_num_held_bits;
+    uint32_t num_total_bits = uiNumberOfBits + bitstream.m_num_held_bits;
     uint32_t next_num_held_bits = num_total_bits % 8;
     
     /* form a byte aligned word (write_bits), by concatenating any held bits
@@ -336,33 +336,33 @@ static void write_bits(OutputBitstream_t *bitstream, uint32_t uiBits, uint32_t u
       /* insufficient bits accumulated to write out, append new_held_bits to
        * current held_bits */
       /* NB, this requires that v only contains 0 in bit positions {31..n} */
-      bitstream->m_held_bits |= next_held_bits;
-      bitstream->m_num_held_bits = next_num_held_bits;
+      bitstream.m_held_bits |= next_held_bits;
+      bitstream.m_num_held_bits = next_num_held_bits;
     
       return;
     }
     
     /* topword serves to justify held_bits to align with the msb of uiBits */
     uint32_t topword = (uiNumberOfBits - next_num_held_bits) & ~((1 << 3) -1);
-    uint32_t write_value = (bitstream->m_held_bits << topword) | (uiBits >> next_num_held_bits);
+    uint32_t write_value = (bitstream.m_held_bits << topword) | (uiBits >> next_num_held_bits);
     
     switch (num_total_bits >> 3)
     {
-      case 4: bitstream->m_fifo.push_back(write_value >> 24);
-      case 3: bitstream->m_fifo.push_back(write_value >> 16);
-      case 2: bitstream->m_fifo.push_back(write_value >> 8);
-      case 1: bitstream->m_fifo.push_back(write_value);
+      case 4: bitstream.m_fifo.push_back(write_value >> 24);
+      case 3: bitstream.m_fifo.push_back(write_value >> 16);
+      case 2: bitstream.m_fifo.push_back(write_value >> 8);
+      case 1: bitstream.m_fifo.push_back(write_value);
     }
 
-    bitstream->m_held_bits = next_held_bits;
-    bitstream->m_num_held_bits = next_num_held_bits;
+    bitstream.m_held_bits = next_held_bits;
+    bitstream.m_num_held_bits = next_num_held_bits;
 }
 
 
 
 void WRITE_CODE
 (
-    OutputBitstream_t *bitstream,
+    OutputBitstream_t &bitstream,
     uint32_t uiCode,
     uint32_t uiLength
 )
@@ -373,7 +373,7 @@ void WRITE_CODE
 
 void WRITE_FLAG
 (
-    OutputBitstream_t *bitstream,
+    OutputBitstream_t &bitstream,
     bool flag
 )
 {
