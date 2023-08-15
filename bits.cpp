@@ -306,7 +306,7 @@ bool MORE_RBSP_DATA(void)
     // we have more data, if cnt is not zero
     return (cnt > 0);
 }
- 
+
 /**
  * TComOutputBitstream::write() in HM
  *

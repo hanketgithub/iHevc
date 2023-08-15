@@ -1,4 +1,4 @@
-sources = main.cpp bits.cpp parser.cpp
+sources = main.cpp bits.cpp parser.cpp writer.cpp
 objects = $(patsubst %.cpp,%.o,$(sources))
 CPP = g++
 OPTS = -Wall
@@ -11,6 +11,9 @@ main.o: main.cpp
 	$(CPP) -c $<
 
 parser.o: parser.cpp
+	$(CPP) -c $<
+
+writer.o: writer.cpp
 	$(CPP) -c $<
 
 bits.o: bits.cpp

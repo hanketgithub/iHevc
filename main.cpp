@@ -26,8 +26,9 @@
 #include <vector>
       
 #include "common.h"
-#include "parser.h"
 #include "bits.h"
+#include "parser.h"
+#include "writer.h"
 
 
 using namespace std;
@@ -223,20 +224,14 @@ void test_timecode_sei()
 {
     OutputBitstream_t bitstream;
 
-    WRITE_CODE(&bitstream, 1, 2);   // num_clock_ts
-    WRITE_FLAG(&bitstream, true);   // clock_timestamp_flag
-    WRITE_FLAG(&bitstream, false);  // units_field_based_flag
-    WRITE_CODE(&bitstream, 0, 5);   // counting_type
-    WRITE_FLAG(&bitstream, true);   // full_timestamp_flag
-    WRITE_CODE(&bitstream, 0, 1);   // discontinuity_flag
-    WRITE_FLAG(&bitstream, false);  // cnt_dropped_flag
-    WRITE_CODE(&bitstream, 0, 9);   // n_frames
-    WRITE_CODE(&bitstream, 5, 6);   // SS
-    WRITE_CODE(&bitstream, 10, 6);  // MM
-    WRITE_CODE(&bitstream, 15, 5);  // HH
-    WRITE_CODE(&bitstream, 0, 5);   // time_offset_length
-    WRITE_CODE(&bitstream, 0, 32);  // done
+    uint8_t num_clock_ts = 1;
+    uint16_t n_frames = 0;
+    uint8_t seconds = 5;
+    uint8_t minutes = 10;
+    uint8_t hours =  15;
 
+    WriteTimecodeSEI(&bitstream, num_clock_ts, n_frames, seconds, minutes, hours);
+    
     cout << bitstream.m_fifo.size() << endl;
 
     vector<uint8_t> sei;
@@ -250,11 +245,11 @@ void test_timecode_sei()
     // Wtite payload size
     sei.push_back( bitstream.m_fifo.size() );
 
+    // Write payload data
     for (auto v : bitstream.m_fifo)
     {
         sei.push_back(v);
     }
-
     
     for (auto v : sei)
     {
@@ -265,7 +260,7 @@ void test_timecode_sei()
 
 int main(int argc, const char * argv[])
 {
-#if 0
+#if 1
     test_timecode_sei();
 #else
 
