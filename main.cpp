@@ -225,10 +225,10 @@ void test_timecode_sei()
     OutputBitstream_t bitstream;
 
     uint8_t num_clock_ts = 1;
-    uint16_t n_frames = 0;
-    uint8_t seconds = 5;
-    uint8_t minutes = 10;
-    uint8_t hours =  15;
+    uint16_t n_frames = 3;
+    uint8_t seconds = 30;
+    uint8_t minutes = 15;
+    uint8_t hours =  9;
 
     WriteTimecodeSEI(bitstream, num_clock_ts, n_frames, seconds, minutes, hours);
     

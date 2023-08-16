@@ -22,19 +22,19 @@ void WriteTimecodeSEI
     uint8_t num_clock_ts, uint16_t n_frames, uint8_t seconds, uint8_t minutes, uint8_t hours
 )
 {
-    WRITE_CODE(bitstream, num_clock_ts, 2);   // num_clock_ts
-    WRITE_FLAG(bitstream, true);   // clock_timestamp_flag
-    WRITE_FLAG(bitstream, false);  // units_field_based_flag
-    WRITE_CODE(bitstream, 0, 5);   // counting_type
-    WRITE_FLAG(bitstream, true);   // full_timestamp_flag
-    WRITE_CODE(bitstream, 0, 1);   // discontinuity_flag
-    WRITE_FLAG(bitstream, false);  // cnt_dropped_flag
-    WRITE_CODE(bitstream, n_frames, 9);   // n_frames
-    WRITE_CODE(bitstream, seconds, 6);   // SS
-    WRITE_CODE(bitstream, minutes, 6);  // MM
-    WRITE_CODE(bitstream, hours, 5);  // HH
-    WRITE_CODE(bitstream, 0, 5);   // time_offset_length
-    WRITE_CODE(bitstream, 0, 32);  // done
+    WRITE_CODE(bitstream, num_clock_ts, 2, "num_clock_ts");   // num_clock_ts
+    WRITE_FLAG(bitstream, true, "clock_timestamp_flag");   // clock_timestamp_flag
+    WRITE_FLAG(bitstream, false, "units_field_based_flag");  // units_field_based_flag
+    WRITE_CODE(bitstream, 0, 5, "counting_type");   // counting_type
+    WRITE_FLAG(bitstream, true, "full_timestamp_flag");   // full_timestamp_flag
+    WRITE_CODE(bitstream, 0, 1, "discontinuity_flag");   // discontinuity_flag
+    WRITE_FLAG(bitstream, false, "cnt_dropped_flag");  // cnt_dropped_flag
+    WRITE_CODE(bitstream, n_frames, 9, "n_frames");   // n_frames
+    WRITE_CODE(bitstream, seconds, 6, "SS");   // SS
+    WRITE_CODE(bitstream, minutes, 6, "MM");  // MM
+    WRITE_CODE(bitstream, hours, 5, "HH");  // HH
+    WRITE_CODE(bitstream, 0, 5, "time_offset_length");   // time_offset_length
+    WRITE_CODE(bitstream, 0, 32, "");  // done
 }
 
 

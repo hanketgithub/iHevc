@@ -16,6 +16,9 @@
 #include "bits.h"
 
 
+using namespace std;
+
+
 int dbg = 1;
 
 #define min(a, b) (((a) < (b)) ? (a) : (b)) 
@@ -56,6 +59,11 @@ static void write_bits
     uint32_t uiNumberOfBits
 );
 
+
+static uint32_t ConvertToUInt(int iValue)
+{
+    return (iValue <= 0) ? -iValue << 1 : (iValue << 1) - 1;
+}
 
 static int32_t read_svlc(InputBitstream_t &bitstream)
 {
@@ -359,24 +367,64 @@ static void write_bits(OutputBitstream_t &bitstream, uint32_t uiBits, uint32_t u
 }
 
 
-
 void WRITE_CODE
 (
     OutputBitstream_t &bitstream,
     uint32_t uiCode,
-    uint32_t uiLength
+    uint32_t uiLength,
+    const char *name
 )
 {
     write_bits(bitstream, uiCode, uiLength);
+
+    TRACE_4("%-50s u(%d)  : %d\n", name, uiLength, uiCode);
 }
 
 
 void WRITE_FLAG
 (
     OutputBitstream_t &bitstream,
-    bool flag
+    bool flag,
+    const char *name
 )
 {
     write_bits(bitstream, flag, 1);
+
+    TRACE("%-50s u(1)  : %d\n", name, flag);
 }
+
+
+void WRITE_UVLC
+(
+    OutputBitstream_t &bitstream,
+    uint32_t uiCode
+)
+{
+    uint32_t uiLength = 1;
+    uint32_t uiTemp = ++uiCode;
+
+    while (1 != uiTemp)
+    {
+        uiTemp >>= 1;
+        uiLength += 2;
+    }
+
+    write_bits(bitstream, 0, uiLength >> 1);
+    write_bits(bitstream, uiCode, (uiLength+1) >> 1);
+}
+
+
+void WRITE_SVLC
+(
+    OutputBitstream_t &bitstream,
+    int32_t iCode
+)
+{
+    uint32_t uiCode;
+
+    uiCode = ConvertToUInt(iCode);
+
+    WRITE_UVLC(bitstream, uiCode);
+}
+
 

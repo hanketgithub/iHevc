@@ -74,14 +74,30 @@ void WRITE_CODE
 (
     OutputBitstream_t &bitstream,
     uint32_t uiCode,
-    uint32_t uiLength
+    uint32_t uiLength,
+    const char *name
 );
 
 
 void WRITE_FLAG
 (
     OutputBitstream_t &bitstream,
-    bool flag
+    bool flag,
+    const char *name
+);
+
+
+void WRITE_UVLC
+(
+    OutputBitstream_t &bitstream,
+    uint32_t uiCode
+);
+
+
+void WRITE_SVLC
+(
+    OutputBitstream_t &bitstream,
+    int32_t iCode
 );
 
 #endif
