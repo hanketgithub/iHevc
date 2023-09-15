@@ -27,7 +27,6 @@ typedef struct
 {
     uint32_t m_num_held_bits;
     uint8_t  m_held_bits;
-    uint32_t m_numBitsRead;
 
     std::vector<uint8_t> m_fifo;
     uint32_t m_fifo_idx;
