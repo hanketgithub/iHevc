@@ -35,11 +35,11 @@ static void parse_ptl(InputBitstream_t &bitstream, uint32_t max_sub_layers_minus
 
 static void parse_scaling_list(InputBitstream_t &bitstream);
 
-static void parse_short_term_ref_pic_set(InputBitstream_t &bitstream, SPS_t *pSPS, ReferencePictureSet_t *rps, uint32_t stRpsIdx);
+static void parse_short_term_ref_pic_set(InputBitstream_t &bitstream, SPS_t &sps, ReferencePictureSet_t &rps, uint32_t stRpsIdx);
 
-static void parse_vui(InputBitstream_t &bitstream, uint32_t maxNumSubLayersMinus1);
+static void parse_vui(InputBitstream_t &bitstream, uint32_t maxNumSubLayersMinus1, VUI_t &vui);
 
-static void parse_hrd(InputBitstream_t &bitstream, bool commonInfPresentFlag, uint32_t maxNumSubLayersMinus1);
+static void parse_hrd(InputBitstream_t &bitstream, bool commonInfPresentFlag, uint32_t maxNumSubLayersMinus1, HRD_t &hrd);
 
 static void parse_sub_layer_hrd_params(InputBitstream_t &bitstream, uint32_t CpbCnt);
 
@@ -51,12 +51,7 @@ static void pred_weight_table(InputBitstream_t &bitstream, SPS_t *pSPS);
 /******************************
  * local variable
  */
-/* sps id has 4 bits, so max is 15 */
-static SPS_t sps[1 << 4];
-
-static PPS_t pps[1024];
-
-static Slice_t slice;
+//static Slice_t slice;
     
 static uint32_t ScalingList[4][6][64];
 
@@ -189,7 +184,7 @@ static void parse_scaling_list(InputBitstream_t &bitstream)
     }
 }
 
-static void parse_short_term_ref_pic_set(InputBitstream_t &bitstream, SPS_t *pSPS, ReferencePictureSet_t *rps, uint32_t stRpsIdx)
+static void parse_short_term_ref_pic_set(InputBitstream_t &bitstream, SPS_t &sps, ReferencePictureSet_t &rps, uint32_t stRpsIdx)
 {   
     bool        inter_ref_pic_set_prediction_flag = false;
     uint32_t    delta_idx_minus1 = 0;
@@ -204,25 +199,22 @@ static void parse_short_term_ref_pic_set(InputBitstream_t &bitstream, SPS_t *pSP
         bool delta_rps_sign;
         uint32_t abs_delta_rps_minus1;
         
-        if (stRpsIdx == pSPS->m_RPSList.m_numberOfReferencePictureSets)
+        if (stRpsIdx == sps.m_RPSList.m_numberOfReferencePictureSets)
         {
             delta_idx_minus1 = READ_UVLC(bitstream, "delta_idx_minus1");
         }
 
-        int32_t rIdx;
-        ReferencePictureSet_t *rpsRef;
-
-        rIdx    = stRpsIdx - 1 - delta_idx_minus1;
-        rpsRef  = &pSPS->m_RPSList.m_referencePictureSets[rIdx];
+        int32_t rIdx = stRpsIdx - 1 - delta_idx_minus1;
+        ReferencePictureSet_t &rpsRef = sps.m_RPSList.m_referencePictureSets[rIdx];
  
         delta_rps_sign          = READ_FLAG(bitstream, "delta_rps_sign");
         abs_delta_rps_minus1    = READ_UVLC(bitstream, "abs_delta_rps_minus1");
 
         int j;
 
-        bool used_by_curr_pic_flag[rpsRef->m_numberOfPictures + 1];
-        bool use_delta_flag[rpsRef->m_numberOfPictures + 1];
-        for (j = 0; j <= rpsRef->m_numberOfPictures; j++)
+        bool used_by_curr_pic_flag[rpsRef.m_numberOfPictures + 1];
+        bool use_delta_flag[rpsRef.m_numberOfPictures + 1];
+        for (j = 0; j <= rpsRef.m_numberOfPictures; j++)
         {
             used_by_curr_pic_flag[j] = READ_FLAG(bitstream, "used_by_curr_pic_flag[i]");
 
@@ -240,8 +232,8 @@ static void parse_short_term_ref_pic_set(InputBitstream_t &bitstream, SPS_t *pSP
         num_negative_pics = READ_UVLC(bitstream, "num_negative_pics");
         num_positive_pics = READ_UVLC(bitstream, "num_positive_pics");
 
-        rps->m_numberOfNegativePictures = num_negative_pics;
-        rps->m_numberOfPositivePictures = num_positive_pics;
+        rps.m_numberOfNegativePictures = num_negative_pics;
+        rps.m_numberOfPositivePictures = num_positive_pics;
 
         int i;
         uint32_t delta_poc_s0_minus1[num_negative_pics];
@@ -251,7 +243,7 @@ static void parse_short_term_ref_pic_set(InputBitstream_t &bitstream, SPS_t *pSP
             delta_poc_s0_minus1[i]      = READ_UVLC(bitstream, "delta_poc_s0_minus1[i]");
             used_by_curr_pic_s0_flag[i] = READ_FLAG(bitstream, "used_by_curr_pic_s0_flag[i]");
 
-            rps->m_used[i]              = used_by_curr_pic_s0_flag[i];
+            rps.m_used[i]              = used_by_curr_pic_s0_flag[i];
         }
 
         uint32_t delta_poc_s1_minus1[num_positive_pics];
@@ -261,14 +253,14 @@ static void parse_short_term_ref_pic_set(InputBitstream_t &bitstream, SPS_t *pSP
             delta_poc_s1_minus1[i]      = READ_UVLC(bitstream, "delta_poc_s1_minus1[i]");
             used_by_curr_pic_s1_flag[i] = READ_FLAG(bitstream, "used_by_curr_pic_s1_flag[i]");
 
-            rps->m_used[i + num_negative_pics]  = used_by_curr_pic_s1_flag[i];
+            rps.m_used[i + num_negative_pics]  = used_by_curr_pic_s1_flag[i];
         }
 
-        rps->m_numberOfPictures = rps->m_numberOfNegativePictures + rps->m_numberOfPositivePictures;
+        rps.m_numberOfPictures = rps.m_numberOfNegativePictures + rps.m_numberOfPositivePictures;
     }
 }
 
-static void parse_vui(InputBitstream_t &bitstream, uint32_t maxNumSubLayersMinus1)
+static void parse_vui(InputBitstream_t &bitstream, uint32_t maxNumSubLayersMinus1, VUI_t &vui)
 {
     bool            aspect_ratio_info_present_flag;
     AspectRatioIdc  aspect_ratio_idc = ASPECT_RATIO_UNSPECIFIED;
@@ -381,7 +373,7 @@ static void parse_vui(InputBitstream_t &bitstream, uint32_t maxNumSubLayersMinus
 
         if (vui_hrd_parameters_present_flag)
         {
-            parse_hrd(bitstream, true, maxNumSubLayersMinus1);
+            parse_hrd(bitstream, true, maxNumSubLayersMinus1, vui.m_hrdParameters);
         }
     }
 
@@ -410,7 +402,7 @@ static void parse_vui(InputBitstream_t &bitstream, uint32_t maxNumSubLayersMinus
     }
 }
 
-static void parse_hrd(InputBitstream_t &bitstream, bool commonInfPresentFlag, uint32_t maxNumSubLayersMinus1)
+static void parse_hrd(InputBitstream_t &bitstream, bool commonInfPresentFlag, uint32_t maxNumSubLayersMinus1, HRD_t &hrd)
 {
     int         i;
     bool        nal_hrd_parameters_present_flag;
@@ -528,25 +520,25 @@ static void parse_sub_layer_hrd_params(InputBitstream_t &bitstream, uint32_t Cpb
     }
 }
 
-static void createRPSList(SPS_t *pSPS, uint32_t numRPS)
+static void createRPSList(RPSList_t &m_RPSList, uint32_t numRPS)
 { 
-    pSPS->m_RPSList.m_numberOfReferencePictureSets  = numRPS;
-    pSPS->m_RPSList.m_referencePictureSets          = (ReferencePictureSet_t *) calloc(numRPS, sizeof(ReferencePictureSet_t));
+    m_RPSList.m_numberOfReferencePictureSets  = numRPS;
+    m_RPSList.m_referencePictureSets          = (ReferencePictureSet_t *) calloc(numRPS, sizeof(ReferencePictureSet_t));
 }
 
-static uint32_t getNumRpsCurrTempList(Slice_t *pSlice)
+static uint32_t getNumRpsCurrTempList(Slice_t &slice)
 {
     uint32_t numRpsCurrTempList = 0;
     uint32_t i;
     
-    if (pSlice->m_eSliceType == I_SLICE) 
+    if (slice.m_eSliceType == I_SLICE) 
     {
         return 0;
     }
     
-    for (i = 0; i < pSlice->m_pcRPS->m_numberOfNegativePictures + pSlice->m_pcRPS->m_numberOfPositivePictures + pSlice->m_pcRPS->m_numberOfLongtermPictures; i++)
+    for (i = 0; i < slice.m_pcRPS.m_numberOfNegativePictures + slice.m_pcRPS.m_numberOfPositivePictures + slice.m_pcRPS.m_numberOfLongtermPictures; i++)
     {
-        if (pSlice->m_pcRPS->m_used[i])
+        if (slice.m_pcRPS.m_used[i])
         {
             numRpsCurrTempList++;
         }
@@ -555,7 +547,7 @@ static uint32_t getNumRpsCurrTempList(Slice_t *pSlice)
     return numRpsCurrTempList;
 }
 
-static void pred_weight_table(InputBitstream_t &bitstream, SPS_t *pSPS)
+static void pred_weight_table(InputBitstream_t &bitstream, SPS_t &sps, Slice_t &slice)
 {
     uint32_t    luma_log2_weight_denom;
     int32_t     delta_chroma_log2_weight_denom;
@@ -581,7 +573,7 @@ static void pred_weight_table(InputBitstream_t &bitstream, SPS_t *pSPS)
 
     luma_log2_weight_denom = READ_UVLC(bitstream, "luma_log2_weight_denom");
 
-    if (pSPS->m_chromaFormatIdc != 0)
+    if (sps.m_chromaFormatIdc != 0)
     {
         delta_chroma_log2_weight_denom = READ_SVLC(bitstream, "delta_chroma_log2_weight_denom");
     }
@@ -592,7 +584,7 @@ static void pred_weight_table(InputBitstream_t &bitstream, SPS_t *pSPS)
         luma_weight_l0_flag[i] = READ_FLAG(bitstream, "luma_weight_l0_flag");
     }
 
-    if (pSPS->m_chromaFormatIdc != 0)
+    if (sps.m_chromaFormatIdc != 0)
     {
         for (i = 0; i < slice.m_aiNumRefIdx[0]; i++)
         {
@@ -625,7 +617,7 @@ static void pred_weight_table(InputBitstream_t &bitstream, SPS_t *pSPS)
             luma_weight_l1_flag[i] = READ_FLAG(bitstream, "luma_weight_l1_flag");
         }
 
-        if (pSPS->m_chromaFormatIdc != 0)
+        if (sps.m_chromaFormatIdc != 0)
         {
             for (i = 0; i < slice.m_aiNumRefIdx[1]; i++)
             {
@@ -653,18 +645,18 @@ static void pred_weight_table(InputBitstream_t &bitstream, SPS_t *pSPS)
     }
 }
 
-static void ref_pic_lists_modification(InputBitstream_t &bitstream, Slice_t *pSlice)
+static void ref_pic_lists_modification(InputBitstream_t &bitstream, Slice_t &slice)
 {
     uint32_t i;
     
     bool ref_pic_list_modification_flag_l0 = READ_FLAG(bitstream, "ref_pic_list_modification_flag_l0");
 
-    pSlice->m_RefPicListModification.m_bRefPicListModificationFlagL0 = ref_pic_list_modification_flag_l0;
+    slice.m_RefPicListModification.m_bRefPicListModificationFlagL0 = ref_pic_list_modification_flag_l0;
     
     if (ref_pic_list_modification_flag_l0)
     {
         uint32_t list_entry_l0[32];
-        uint32_t numRpsCurrTempList0 = getNumRpsCurrTempList(pSlice);
+        uint32_t numRpsCurrTempList0 = getNumRpsCurrTempList(slice);
 
         if (numRpsCurrTempList0 > 1)
         {
@@ -675,32 +667,32 @@ static void ref_pic_lists_modification(InputBitstream_t &bitstream, Slice_t *pSl
                 length++;
             }
  
-            for (i = 0; i < pSlice->m_aiNumRefIdx[0]; i++)
+            for (i = 0; i < slice.m_aiNumRefIdx[0]; i++)
             {
                 list_entry_l0[i] = READ_CODE(bitstream, length, "list_entry_l0");
             }
         }
         else
         {
-            for (i = 0; i < pSlice->m_aiNumRefIdx[0]; i ++)
+            for (i = 0; i < slice.m_aiNumRefIdx[0]; i ++)
             {
                 list_entry_l0[i] = 0;
             }
         }
         
-        memcpy(pSlice->m_RefPicListModification.m_RefPicSetIdxL0, list_entry_l0, sizeof(list_entry_l0));
+        memcpy(slice.m_RefPicListModification.m_RefPicSetIdxL0, list_entry_l0, sizeof(list_entry_l0));
     }
 
-    if (pSlice->m_eSliceType == B_SLICE)
+    if (slice.m_eSliceType == B_SLICE)
     {
         bool ref_pic_list_modification_flag_l1 = READ_FLAG(bitstream, "ref_pic_list_modification_flag_l1");
 
-        pSlice->m_RefPicListModification.m_bRefPicListModificationFlagL1 = ref_pic_list_modification_flag_l1;
+        slice.m_RefPicListModification.m_bRefPicListModificationFlagL1 = ref_pic_list_modification_flag_l1;
         
         if (ref_pic_list_modification_flag_l1)
         {
             uint32_t list_entry_l1[32];
-            uint32_t numRpsCurrTempList1 = getNumRpsCurrTempList(pSlice);
+            uint32_t numRpsCurrTempList1 = getNumRpsCurrTempList(slice);
 
             if (numRpsCurrTempList1 > 1)
             {
@@ -711,26 +703,26 @@ static void ref_pic_lists_modification(InputBitstream_t &bitstream, Slice_t *pSl
                     length++;
                 }
      
-                for (i = 0; i < pSlice->m_aiNumRefIdx[1]; i++)
+                for (i = 0; i < slice.m_aiNumRefIdx[1]; i++)
                 {
                     list_entry_l1[i] = READ_CODE(bitstream, length, "list_entry_l1");
                 }
             }
             else
             {
-                for (i = 0; i < pSlice->m_aiNumRefIdx[1]; i++)
+                for (i = 0; i < slice.m_aiNumRefIdx[1]; i++)
                 {
                     list_entry_l1[i] = 0;
                 }
             }
 
-            memcpy(pSlice->m_RefPicListModification.m_RefPicSetIdxL1, list_entry_l1, sizeof(list_entry_l1));
+            memcpy(slice.m_RefPicListModification.m_RefPicSetIdxL1, list_entry_l1, sizeof(list_entry_l1));
         }
     }
 }
 
 
-void ParseVPS(InputBitstream_t &bitstream, VPS_t *pVPS)
+void ParseVPS(InputBitstream_t &bitstream, VPS_t &vps)
 {
     uint32_t    vps_video_parameter_set_id;
     uint32_t    vps_reserved_three_2bits;
@@ -816,7 +808,9 @@ void ParseVPS(InputBitstream_t &bitstream, VPS_t *pVPS)
                 cprms_present_flag[i] = READ_FLAG(bitstream, "cprms_present_flag[i]");
             }
 
-            parse_hrd(bitstream, cprms_present_flag[i], vps_max_sub_layers_minus1);
+            HRD_t hrd;
+
+            parse_hrd(bitstream, cprms_present_flag[i], vps_max_sub_layers_minus1, hrd);
         }
     }
 
@@ -834,14 +828,13 @@ void ParseVPS(InputBitstream_t &bitstream, VPS_t *pVPS)
 
     rbsp_stop_one_bit = READ_FLAG(bitstream, "rbsp_stop_one_bit");
 
-
-    pVPS->m_VPSId = vps_video_parameter_set_id;
+    vps.m_VPSId = vps_video_parameter_set_id;
 }
 
 
-void ParseSPS(InputBitstream_t &bitstream, HevcInfo_t *pHevcInfo)
+void ParseSPS(InputBitstream_t &bitstream, SPS_t SPSs[], HevcInfo_t *pHevcInfo)
 {
-    SPS_t      *p_sps = NULL;
+    //SPS_t      *p_sps = NULL;
     
     uint32_t    sps_video_parameter_set_id = 0;
     uint32_t    sps_max_sub_layers_minus1 = 0;
@@ -870,8 +863,9 @@ void ParseSPS(InputBitstream_t &bitstream, HevcInfo_t *pHevcInfo)
     parse_ptl(bitstream, sps_max_sub_layers_minus1);
 
     sps_seq_parameter_set_id    = READ_UVLC(bitstream, "sps_seq_parameter_set_id");
-    p_sps = &sps[sps_seq_parameter_set_id];
-    
+
+    SPS_t &sps = SPSs[sps_seq_parameter_set_id];
+   
     chroma_format_idc           = (ChromaFormat) READ_UVLC(bitstream, "chroma_format_idc");
 
     if (3 == chroma_format_idc)
@@ -964,12 +958,11 @@ void ParseSPS(InputBitstream_t &bitstream, HevcInfo_t *pHevcInfo)
 
     num_short_term_ref_pic_sets = READ_UVLC(bitstream, "num_short_term_ref_pic_sets");
 
-    createRPSList(p_sps, num_short_term_ref_pic_sets);
+    createRPSList(sps.m_RPSList, num_short_term_ref_pic_sets);
     
     for (i = 0; i < num_short_term_ref_pic_sets; i++)
     {
-        ReferencePictureSet_t *rps = &p_sps->m_RPSList.m_referencePictureSets[i];
-        parse_short_term_ref_pic_set(bitstream, p_sps, rps, i);
+        parse_short_term_ref_pic_set(bitstream, sps, sps.m_RPSList.m_referencePictureSets[i], i);
     }
 
     bool long_term_ref_pics_present_flag = false;
@@ -987,7 +980,7 @@ void ParseSPS(InputBitstream_t &bitstream, HevcInfo_t *pHevcInfo)
         
         for (i = 0; i < num_long_term_ref_pics_sps; i++)
         {
-            lt_ref_pic_poc_lsb_sps[i]       = READ_CODE(bitstream, p_sps->m_uiBitsForPOC, "lt_ref_pic_poc_lsb_sps[i]");
+            lt_ref_pic_poc_lsb_sps[i]       = READ_CODE(bitstream, sps.m_uiBitsForPOC, "lt_ref_pic_poc_lsb_sps[i]");
             used_by_curr_pic_lt_sps_flag[i] = READ_FLAG(bitstream, "used_by_curr_pic_lt_sps_flag[i]");
         }
     }
@@ -1002,7 +995,7 @@ void ParseSPS(InputBitstream_t &bitstream, HevcInfo_t *pHevcInfo)
 
     if (vui_parameters_present_flag)
     {
-        parse_vui(bitstream, sps_max_sub_layers_minus1);
+        parse_vui(bitstream, sps_max_sub_layers_minus1, sps.m_vuiParameters);
     }
     
     bool sps_extension_flag = false;
@@ -1021,29 +1014,29 @@ void ParseSPS(InputBitstream_t &bitstream, HevcInfo_t *pHevcInfo)
     
     rbsp_stop_one_bit = READ_FLAG(bitstream, "rbsp_stop_one_bit");
 
-    p_sps->m_VPSId                           = sps_video_parameter_set_id;
-    p_sps->m_SPSId                           = sps_seq_parameter_set_id;
-    p_sps->m_chromaFormatIdc                 = chroma_format_idc;
+    sps.m_VPSId                           = sps_video_parameter_set_id;
+    sps.m_SPSId                           = sps_seq_parameter_set_id;
+    sps.m_chromaFormatIdc                 = chroma_format_idc;
 
-    p_sps->m_uiBitsForPOC                    = log2_max_pic_order_cnt_lsb_minus4 + 4;
+    sps.m_uiBitsForPOC                    = log2_max_pic_order_cnt_lsb_minus4 + 4;
 
-    p_sps->m_separateColourPlaneFlag         = separate_colour_plane_flag;
+    sps.m_separateColourPlaneFlag         = separate_colour_plane_flag;
 
-    p_sps->m_log2MinCodingBlockSize          = log2_min_luma_coding_block_size_minus3 + 3;
-    p_sps->m_log2DiffMaxMinCodingBlockSize   = log2_diff_max_min_luma_coding_block_size;
-    p_sps->m_uiMaxCUWidth                    = 1 << (p_sps->m_log2MinCodingBlockSize + p_sps->m_log2DiffMaxMinCodingBlockSize);
-    p_sps->m_uiMaxCUHeight                   = 1 << (p_sps->m_log2MinCodingBlockSize + p_sps->m_log2DiffMaxMinCodingBlockSize);
+    sps.m_log2MinCodingBlockSize          = log2_min_luma_coding_block_size_minus3 + 3;
+    sps.m_log2DiffMaxMinCodingBlockSize   = log2_diff_max_min_luma_coding_block_size;
+    sps.m_uiMaxCUWidth                    = 1 << (sps.m_log2MinCodingBlockSize + sps.m_log2DiffMaxMinCodingBlockSize);
+    sps.m_uiMaxCUHeight                   = 1 << (sps.m_log2MinCodingBlockSize + sps.m_log2DiffMaxMinCodingBlockSize);
 
-    p_sps->m_bLongTermRefsPresent            = long_term_ref_pics_present_flag;
-    p_sps->m_SPSTemporalMVPEnabledFlag       = sps_temporal_mvp_enabled_flag;
-    p_sps->m_bUseSAO                         = sample_adaptive_offset_enabled_flag;
+    sps.m_bLongTermRefsPresent            = long_term_ref_pics_present_flag;
+    sps.m_SPSTemporalMVPEnabledFlag       = sps_temporal_mvp_enabled_flag;
+    sps.m_bUseSAO                         = sample_adaptive_offset_enabled_flag;
     //printf("CtbSizeY=%u\n", p_sps->m_uiMaxCUWidth);
 
     pHevcInfo->u32Width  = pic_width_in_luma_samples;
     pHevcInfo->u32Height = pic_height_in_luma_samples;
 }
 
-void ParsePPS(InputBitstream_t &bitstream)
+void ParsePPS(InputBitstream_t &bitstream, PPS_t PPSs[])
 {
     PPS_t      *p_pps;
     
@@ -1084,7 +1077,7 @@ void ParsePPS(InputBitstream_t &bitstream)
 
     pps_pic_parameter_set_id    = READ_UVLC(bitstream, "pps_pic_parameter_set_id");
 
-    p_pps = &pps[pps_pic_parameter_set_id];
+    PPS_t &pps = PPSs[pps_pic_parameter_set_id];
     
     pps_seq_parameter_set_id    = READ_UVLC(bitstream, "pps_seq_parameter_set_id");
     dependent_slice_segments_enabled_flag = READ_FLAG(bitstream, "dependent_slice_segments_enabled_flag");
@@ -1216,7 +1209,15 @@ void ParseAUD(InputBitstream_t &bitstream)
 }
 
 
-void ParseSliceHeader(InputBitstream_t &bitstream, NalUnitType nal_unit_type, string &message)
+void ParseSliceHeader
+(
+    InputBitstream_t &bitstream, 
+    Slice_t &slice,
+    SPS_t SPSs[],
+    PPS_t PPSs[],
+    NalUnitType nal_unit_type,
+    string &message
+)
 {
     bool        first_slice_segment_in_pic_flag;
     bool        no_output_of_prior_pics_flag;
@@ -1251,9 +1252,6 @@ void ParseSliceHeader(InputBitstream_t &bitstream, NalUnitType nal_unit_type, st
     bool        deblocking_filter_override_flag         = false;
 
     uint32_t    num_entry_point_offsets                 = 0;
-    
-    SPS_t      *p_sps = NULL;
-    PPS_t      *p_pps = NULL;
 
 
     first_slice_segment_in_pic_flag = READ_FLAG(bitstream, "first_slice_segment_in_pic_flag");
@@ -1267,19 +1265,19 @@ void ParseSliceHeader(InputBitstream_t &bitstream, NalUnitType nal_unit_type, st
 
     slice_pic_parameter_set_id = READ_UVLC(bitstream, "slice_pic_parameter_set_id");
     
-    p_pps = &pps[slice_pic_parameter_set_id];
-    p_sps = &sps[p_pps->m_SPSId];
+    PPS_t &pps = PPSs[slice_pic_parameter_set_id];
+    SPS_t &sps = SPSs[pps.m_SPSId];
 
-    num_ref_idx_l1_active_minus1 = p_pps->m_numRefIdxL1DefaultActive;
+    num_ref_idx_l1_active_minus1 = pps.m_numRefIdxL1DefaultActive;
     
-    bool        slice_reserved_flag[p_pps->m_numExtraSliceHeaderBits];
-    bool        slice_deblocking_filter_disabled_flag   = p_pps->m_picDisableDeblockingFilterFlag;
-    int32_t     slice_beta_offset_div2                  = p_pps->m_deblockingFilterBetaOffsetDiv2;
-    int32_t     slice_tc_offset_div2                    = p_pps->m_deblockingFilterTcOffsetDiv2;
+    bool        slice_reserved_flag[pps.m_numExtraSliceHeaderBits];
+    bool        slice_deblocking_filter_disabled_flag   = pps.m_picDisableDeblockingFilterFlag;
+    int32_t     slice_beta_offset_div2                  = pps.m_deblockingFilterBetaOffsetDiv2;
+    int32_t     slice_tc_offset_div2                    = pps.m_deblockingFilterTcOffsetDiv2;
     
     if (!first_slice_segment_in_pic_flag)
     {
-        if (p_pps->m_dependentSliceSegmentsEnabledFlag)
+        if (pps.m_dependentSliceSegmentsEnabledFlag)
         {
             dependent_slice_segment_flag = READ_FLAG(bitstream, "dependent_slice_segment_flag");
         }
@@ -1290,14 +1288,14 @@ void ParseSliceHeader(InputBitstream_t &bitstream, NalUnitType nal_unit_type, st
     uint32_t i;
     if (!dependent_slice_segment_flag)
     {
-        for (i = 0; i < p_pps->m_numExtraSliceHeaderBits; i++)
+        for (i = 0; i < pps.m_numExtraSliceHeaderBits; i++)
         {
             slice_reserved_flag[i] = READ_FLAG(bitstream, "slice_reserved_flag");
         }
 
         slice_type = (SliceType) READ_UVLC(bitstream, "slice_type");
 
-        if (p_pps->m_OutputFlagPresentFlag)
+        if (pps.m_OutputFlagPresentFlag)
         {
             pic_output_flag = READ_FLAG(bitstream, "pic_output_flag");
         }
@@ -1306,7 +1304,7 @@ void ParseSliceHeader(InputBitstream_t &bitstream, NalUnitType nal_unit_type, st
             pic_output_flag = true;
         }
 
-        if (p_sps->m_separateColourPlaneFlag)
+        if (sps.m_separateColourPlaneFlag)
         {
             colour_plane_id = READ_CODE(bitstream, 2, "colour_plane_id");
         }
@@ -1314,12 +1312,12 @@ void ParseSliceHeader(InputBitstream_t &bitstream, NalUnitType nal_unit_type, st
         // IDR
         if (nal_unit_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nal_unit_type == NAL_UNIT_CODED_SLICE_IDR_N_LP)
         {
-            ReferencePictureSet_t *rps = &slice.m_LocalRPS;
+            ReferencePictureSet_t rps = slice.m_LocalRPS;
 
-            rps->m_numberOfNegativePictures = 0;
-            rps->m_numberOfPositivePictures = 0;
-            rps->m_numberOfLongtermPictures = 0;
-            rps->m_numberOfPictures         = 0;
+            rps.m_numberOfNegativePictures = 0;
+            rps.m_numberOfPositivePictures = 0;
+            rps.m_numberOfLongtermPictures = 0;
+            rps.m_numberOfPictures         = 0;
 
             slice.m_pcRPS = rps;
         }
@@ -1327,25 +1325,23 @@ void ParseSliceHeader(InputBitstream_t &bitstream, NalUnitType nal_unit_type, st
         if (nal_unit_type != NAL_UNIT_CODED_SLICE_IDR_W_RADL && nal_unit_type != NAL_UNIT_CODED_SLICE_IDR_N_LP)
         {
             //printf("pSPS->m_uiBitsForPOC=%d\n", p_sps->m_uiBitsForPOC);
-            slice_pic_order_cnt_lsb = READ_CODE(bitstream, p_sps->m_uiBitsForPOC, "slice_pic_order_cnt_lsb");
+            slice_pic_order_cnt_lsb = READ_CODE(bitstream, sps.m_uiBitsForPOC, "slice_pic_order_cnt_lsb");
 
             short_term_ref_pic_set_sps_flag = READ_FLAG(bitstream, "short_term_ref_pic_set_sps_flag");
 
             if (!short_term_ref_pic_set_sps_flag)
             {
-                ReferencePictureSet_t *rps;
-
-                slice.m_pcRPS   = &slice.m_LocalRPS;
-                rps             = slice.m_pcRPS;
+                slice.m_pcRPS   = slice.m_LocalRPS;
+                ReferencePictureSet_t &rps = slice.m_pcRPS;
                 
-                parse_short_term_ref_pic_set(bitstream, p_sps, rps, p_sps->m_RPSList.m_numberOfReferencePictureSets);
+                parse_short_term_ref_pic_set(bitstream, sps, rps, sps.m_RPSList.m_numberOfReferencePictureSets);
             }
-            else if (p_sps->m_RPSList.m_numberOfReferencePictureSets > 1)
+            else if (sps.m_RPSList.m_numberOfReferencePictureSets > 1)
             {
 
                 uint32_t numBits = 0;
 
-                while ((1 << numBits) < p_sps->m_RPSList.m_numberOfReferencePictureSets)
+                while ((1 << numBits) < sps.m_RPSList.m_numberOfReferencePictureSets)
                 {
                     numBits++;
                 }
@@ -1360,15 +1356,15 @@ void ParseSliceHeader(InputBitstream_t &bitstream, NalUnitType nal_unit_type, st
                 }
             }
 
-            if (p_sps->m_bLongTermRefsPresent)
+            if (sps.m_bLongTermRefsPresent)
             {
-                if (p_sps->m_numLongTermRefPicSPS > 0)
+                if (sps.m_numLongTermRefPicSPS > 0)
                 {
                     num_long_term_sps = READ_UVLC(bitstream, "num_long_term_sps");
                 }
 
                 uint32_t bitsForLtrpInSPS = 0;
-                while (p_sps->m_numLongTermRefPicSPS > (1 << bitsForLtrpInSPS))
+                while (sps.m_numLongTermRefPicSPS > (1 << bitsForLtrpInSPS))
                 {
                     bitsForLtrpInSPS++;
                 }
@@ -1392,7 +1388,7 @@ void ParseSliceHeader(InputBitstream_t &bitstream, NalUnitType nal_unit_type, st
                     }
                     else
                     {
-                        poc_lsb_lt[i] = READ_CODE(bitstream, p_sps->m_uiBitsForPOC, "poc_lsb_lt[i]");
+                        poc_lsb_lt[i] = READ_CODE(bitstream, sps.m_uiBitsForPOC, "poc_lsb_lt[i]");
                         used_by_curr_pic_lt_flag[i] = READ_FLAG(bitstream, "used_by_curr_pic_lt_flag[i]");
                     }
 
@@ -1404,13 +1400,13 @@ void ParseSliceHeader(InputBitstream_t &bitstream, NalUnitType nal_unit_type, st
                 }
             }
 
-            if (p_sps->m_SPSTemporalMVPEnabledFlag)
+            if (sps.m_SPSTemporalMVPEnabledFlag)
             {
                 slice_temporal_mvp_enabled_flag = READ_FLAG(bitstream, "slice_temporal_mvp_enabled_flag");
             }
         }
 
-        if (p_sps->m_bUseSAO)
+        if (sps.m_bUseSAO)
         {
             slice_sao_luma_flag     = READ_FLAG(bitstream, "slice_sao_luma_flag");
             slice_sao_chroma_flag   = READ_FLAG(bitstream, "slice_sao_chroma_flag");
@@ -1437,13 +1433,13 @@ void ParseSliceHeader(InputBitstream_t &bitstream, NalUnitType nal_unit_type, st
             }
             else
             {
-                num_ref_idx_l0_active_minus1    = p_pps->m_numRefIdxL0DefaultActive - 1;
-                slice.m_aiNumRefIdx[0]          = p_pps->m_numRefIdxL0DefaultActive;
+                num_ref_idx_l0_active_minus1    = pps.m_numRefIdxL0DefaultActive - 1;
+                slice.m_aiNumRefIdx[0]          = pps.m_numRefIdxL0DefaultActive;
 
                 if (slice_type == B_SLICE)
                 {
-                    num_ref_idx_l1_active_minus1    = p_pps->m_numRefIdxL1DefaultActive - 1;
-                    slice.m_aiNumRefIdx[1]          = p_pps->m_numRefIdxL1DefaultActive;
+                    num_ref_idx_l1_active_minus1    = pps.m_numRefIdxL1DefaultActive - 1;
+                    slice.m_aiNumRefIdx[1]          = pps.m_numRefIdxL1DefaultActive;
                 }
                 else
                 {
@@ -1451,9 +1447,9 @@ void ParseSliceHeader(InputBitstream_t &bitstream, NalUnitType nal_unit_type, st
                 }
             }
 
-            if (p_pps->m_listsModificationPresentFlag && getNumRpsCurrTempList(&slice) > 1)
+            if (pps.m_listsModificationPresentFlag && getNumRpsCurrTempList(slice) > 1)
             {
-                ref_pic_lists_modification(bitstream, &slice);
+                ref_pic_lists_modification(bitstream, slice);
             }
 
             if (slice_type == B_SLICE)
@@ -1461,7 +1457,7 @@ void ParseSliceHeader(InputBitstream_t &bitstream, NalUnitType nal_unit_type, st
                 mvd_l1_zero_flag = READ_FLAG(bitstream, "mvd_l1_zero_flag");
             }
 
-            if (p_pps->m_cabacInitPresentFlag)
+            if (pps.m_cabacInitPresentFlag)
             {
                 cabac_init_flag = READ_FLAG(bitstream, "cabac_init_flag");
                 slice.m_cabacInitFlag = cabac_init_flag;
@@ -1484,25 +1480,25 @@ void ParseSliceHeader(InputBitstream_t &bitstream, NalUnitType nal_unit_type, st
                 }
             }
 
-            if ((p_pps->m_bUseWeightPred && slice_type == P_SLICE)
-                || (p_pps->m_useWeightedBiPred && slice_type == B_SLICE))
+            if ((pps.m_bUseWeightPred && slice_type == P_SLICE)
+                || (pps.m_useWeightedBiPred && slice_type == B_SLICE))
             {
-                pred_weight_table(bitstream, p_sps);
+                pred_weight_table(bitstream, sps, slice);
             }
 
             five_minus_max_num_merge_cand = READ_UVLC(bitstream, "five_minus_max_num_merge_cand");
         }
 
         slice_qp_delta = READ_SVLC(bitstream, "slice_qp_delta");
-        slice.m_iSliceQp = p_pps->m_picInitQPMinus26 + 26 + slice_qp_delta;
+        slice.m_iSliceQp = pps.m_picInitQPMinus26 + 26 + slice_qp_delta;
 
-        if (p_pps->m_bSliceChromaQpFlag)
+        if (pps.m_bSliceChromaQpFlag)
         {
             slice_cb_qp_offset = READ_SVLC(bitstream, "slice_cb_qp_offset");
             slice_cr_qp_offset = READ_SVLC(bitstream, "slice_cr_qp_offset");
         }
 
-        if (p_pps->m_deblockingFilterOverrideEnabledFlag)
+        if (pps.m_deblockingFilterOverrideEnabledFlag)
         {
             deblocking_filter_override_flag = READ_FLAG(bitstream, "deblocking_filter_override_flag");
         }
@@ -1517,7 +1513,7 @@ void ParseSliceHeader(InputBitstream_t &bitstream, NalUnitType nal_unit_type, st
             }
         }
 
-        if (p_pps->m_loopFilterAcrossSlicesEnabledFlag && 
+        if (pps.m_loopFilterAcrossSlicesEnabledFlag && 
             (slice_sao_luma_flag || slice_sao_chroma_flag || !slice_deblocking_filter_disabled_flag))
         {
             bool slice_loop_filter_across_slices_enabled_flag;
@@ -1525,7 +1521,7 @@ void ParseSliceHeader(InputBitstream_t &bitstream, NalUnitType nal_unit_type, st
         }
     }
 
-    if (p_pps->m_tilesEnabledFlag || p_pps->m_entropyCodingSyncEnabledFlag)
+    if (pps.m_tilesEnabledFlag || pps.m_entropyCodingSyncEnabledFlag)
     {
         num_entry_point_offsets = READ_UVLC(bitstream, "num_entry_point_offsets");
 
@@ -1544,7 +1540,7 @@ void ParseSliceHeader(InputBitstream_t &bitstream, NalUnitType nal_unit_type, st
         }
     }
 
-    if (p_pps->m_sliceHeaderExtensionPresentFlag)
+    if (pps.m_sliceHeaderExtensionPresentFlag)
     {
         int i;
 

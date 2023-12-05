@@ -47,6 +47,13 @@ static uint8_t u8EsBuffer[ES_BUFFER_SIZE + sizeof(u8endCode)];
 
 static VPS_t vps;
 
+/* sps id has 4 bits, so max is 15 */
+static SPS_t SPSs[1 << 4];
+
+static PPS_t PPSs[1024];
+
+static Slice_t slice;
+
 static HevcInfo_t tHevcInfo;
 
 string message;
@@ -361,7 +368,7 @@ int main(int argc, const char * argv[])
             {             
                 EBSPtoRBSP(&u8EsBuffer[offset + prefix_len], nal_len, 0);
                 
-                ParseVPS(bitstream, &vps);
+                ParseVPS(bitstream, vps);
                 
                 break;
             }
@@ -369,7 +376,7 @@ int main(int argc, const char * argv[])
             {              
                 EBSPtoRBSP(&u8EsBuffer[offset + prefix_len], nal_len, 0);
                 
-                ParseSPS(bitstream, &tHevcInfo);
+                ParseSPS(bitstream, SPSs, &tHevcInfo);
                 
                 break;
             }
@@ -377,7 +384,7 @@ int main(int argc, const char * argv[])
             {
                 EBSPtoRBSP(&u8EsBuffer[offset + prefix_len], nal_len, 0);
                 
-                ParsePPS(bitstream);
+                ParsePPS(bitstream, PPSs);
                 
                 break;
             }
@@ -408,7 +415,7 @@ int main(int argc, const char * argv[])
             {
                 EBSPtoRBSP(&u8EsBuffer[offset + prefix_len], nal_len, 0);
 
-                ParseSliceHeader(bitstream, nal_unit_type, message);
+                ParseSliceHeader(bitstream, slice, SPSs, PPSs, nal_unit_type, message);
 
                 break;
             }

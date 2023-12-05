@@ -231,12 +231,6 @@ typedef struct
 
 typedef struct
 {
-    uint32_t    m_VPSId;
-} VPS_t;
-
-
-typedef struct
-{
     bool        fixedPicRateFlag;
     bool        fixedPicRateWithinCvsFlag;
     uint32_t    picDurationInTcMinus1;
@@ -267,6 +261,30 @@ typedef struct
     uint32_t    m_dpbOutputDelayLengthMinus1;
     HrdSubLayerInfo_t m_HRD[MAX_TLAYER];
 } HRD_t;
+
+
+typedef struct
+{
+    int32_t                 m_VPSId;
+    uint32_t                m_uiMaxTLayers;
+    uint32_t                m_uiMaxLayers;
+    bool                    m_bTemporalIdNestingFlag;
+
+    uint32_t                m_numReorderPics[MAX_TLAYER];
+    uint32_t                m_uiMaxDecPicBuffering[MAX_TLAYER];
+    uint32_t                m_uiMaxLatencyIncrease[MAX_TLAYER]; // Really max latency increase plus 1 (value 0 expresses no limit)
+
+    uint32_t                m_numHrdParameters;
+    uint32_t                m_maxNuhReservedZeroLayerId;
+    std::vector<HRD_t>      m_hrdParameters;
+    std::vector<uint32_t>   m_hrdOpSetIdx;
+    std::vector<bool>       m_cprmsPresentFlag;
+    uint32_t                m_numOpSets;
+//    bool                    m_layerIdIncludedFlag[MAX_VPS_OP_SETS_PLUS1][MAX_VPS_NUH_RESERVED_ZERO_LAYER_ID_PLUS1];
+
+//    TComPTL                 m_pcPTL;
+//    TimingInfo              m_timingInfo;
+} VPS_t;
 
 
 typedef struct 
@@ -421,7 +439,7 @@ typedef struct
     bool        m_PicOutputFlag;
     uint32_t    m_iPOC;
 
-    ReferencePictureSet_t *m_pcRPS;
+    ReferencePictureSet_t m_pcRPS;
     ReferencePictureSet_t m_LocalRPS;
 
     RefPicListModification_t    m_RefPicListModification;
