@@ -260,7 +260,7 @@ void test_timecode_sei()
 
 int main(int argc, const char * argv[])
 {
-#if 1
+#if 0
     test_timecode_sei();
 #else
     int fd;
@@ -419,7 +419,6 @@ int main(int argc, const char * argv[])
                 SeiType sei_payload_type = SEI_BUFFERING_PERIOD;
                 uint8_t sei_payload_size = 0;
                 PicStruct pic_struct = PIC_STRUCT_FRAME;
-
         
                 ParseSEI(bitstream, &sei_payload_type, &sei_payload_size, &pic_struct);
                 

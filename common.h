@@ -20,6 +20,10 @@
 #define BIT0            0x01
 
 #define MAX_NUM_REF_PICS    16
+#define MAX_CPB_CNT         32
+#define MAX_TLAYER          7   ///< Explicit temporal layer QP offset - max number of temporal layer
+
+#define MAX_NUM_LONG_TERM_REF_PICS  33
 
 
 typedef enum
@@ -169,6 +173,26 @@ typedef enum
 } PicStruct;
 
 
+
+typedef enum
+{
+    CHANNEL_TYPE_LUMA    = 0,
+    CHANNEL_TYPE_CHROMA  = 1,
+    MAX_NUM_CHANNEL_TYPE = 2
+} ChannelType;
+
+
+/// chroma formats (according to semantics of chroma_format_idc)
+typedef enum
+{
+    CHROMA_400        = 0,
+    CHROMA_420        = 1,
+    CHROMA_422        = 2,
+    CHROMA_444        = 3,
+    NUM_CHROMA_FORMAT = 4
+} ChromaFormat;
+
+
 typedef struct
 {
     uint32_t u32Width;
@@ -211,28 +235,146 @@ typedef struct
 } VPS_t;
 
 
+typedef struct
+{
+    bool        fixedPicRateFlag;
+    bool        fixedPicRateWithinCvsFlag;
+    uint32_t    picDurationInTcMinus1;
+    bool        lowDelayHrdFlag;
+    uint32_t    cpbCntMinus1;
+    uint32_t    bitRateValueMinus1 [MAX_CPB_CNT][2];
+    uint32_t    cpbSizeValue       [MAX_CPB_CNT][2];
+    uint32_t    ducpbSizeValue     [MAX_CPB_CNT][2];
+    bool        cbrFlag            [MAX_CPB_CNT][2];
+    uint32_t    duBitRateValue     [MAX_CPB_CNT][2];
+} HrdSubLayerInfo_t;
+
+
+typedef struct
+{
+    bool        m_nalHrdParametersPresentFlag;
+    bool        m_vclHrdParametersPresentFlag;
+    bool        m_subPicCpbParamsPresentFlag;
+    uint32_t    m_tickDivisorMinus2;
+    uint32_t    m_duCpbRemovalDelayLengthMinus1;
+    bool        m_subPicCpbParamsInPicTimingSEIFlag;
+    uint32_t    m_dpbOutputDelayDuLengthMinus1;
+    uint32_t    m_bitRateScale;
+    uint32_t    m_cpbSizeScale;
+    uint32_t    m_ducpbSizeScale;
+    uint32_t    m_initialCpbRemovalDelayLengthMinus1;
+    uint32_t    m_cpbRemovalDelayLengthMinus1;
+    uint32_t    m_dpbOutputDelayLengthMinus1;
+    HrdSubLayerInfo_t m_HRD[MAX_TLAYER];
+} HRD_t;
+
+
 typedef struct 
 {
-    uint32_t    m_SPSId;
-    uint32_t    m_VPSId;
-    uint32_t    m_chromaFormatIdc;
+    bool        m_aspectRatioInfoPresentFlag;
+    int32_t     m_aspectRatioIdc;
+    int32_t     m_sarWidth;
+    int32_t     m_sarHeight;
+    bool        m_overscanInfoPresentFlag;
+    bool        m_overscanAppropriateFlag;
+    bool        m_videoSignalTypePresentFlag;
+    int32_t     m_videoFormat;
+    bool        m_videoFullRangeFlag;
+    bool        m_colourDescriptionPresentFlag;
+    int32_t     m_colourPrimaries;
+    int32_t     m_transferCharacteristics;
+    int32_t     m_matrixCoefficients;
+    bool        m_chromaLocInfoPresentFlag;
+    int32_t     m_chromaSampleLocTypeTopField;
+    int32_t     m_chromaSampleLocTypeBottomField;
+    bool        m_neutralChromaIndicationFlag;
+    bool        m_fieldSeqFlag;
+    //Window      m_defaultDisplayWindow;
+    bool        m_frameFieldInfoPresentFlag;
+    bool        m_hrdParametersPresentFlag;
+    bool        m_bitstreamRestrictionFlag;
+    bool        m_tilesFixedStructureFlag;
+    bool        m_motionVectorsOverPicBoundariesFlag;
+    bool        m_restrictedRefPicListsFlag;
+    int32_t     m_minSpatialSegmentationIdc;
+    int32_t     m_maxBytesPerPicDenom;
+    int32_t     m_maxBitsPerMinCuDenom;
+    int32_t     m_log2MaxMvLengthHorizontal;
+    int32_t     m_log2MaxMvLengthVertical;
+    HRD_t       m_hrdParameters;
+    //TimingInfo  m_timingInfo;
+} VUI_t;
 
+
+typedef struct
+{
+    int32_t             m_SPSId;
+    int32_t             m_VPSId;
+    ChromaFormat        m_chromaFormatIdc;
+    bool                m_separateColourPlaneFlag;
+
+    uint32_t            m_uiMaxTLayers;           // maximum number of temporal layers
     
-    int32_t     m_log2MinCodingBlockSize;
-    int32_t     m_log2DiffMaxMinCodingBlockSize;
-    uint32_t    m_uiMaxCUWidth;
-    uint32_t    m_uiMaxCUHeight;
+    // Structure
+    uint32_t             m_picWidthInLumaSamples;
+    uint32_t             m_picHeightInLumaSamples;
     
-    bool        m_separateColourPlaneFlag;
-
-    RPSList_t   m_RPSList;
-    bool        m_bLongTermRefsPresent;
-    bool        m_TMVPFlagsPresent;
-
-    uint32_t    m_numLongTermRefPicSPS;
-    uint32_t    m_uiBitsForPOC;
-
-    bool        m_bUseSAO;
+    int32_t              m_log2MinCodingBlockSize;
+    int32_t              m_log2DiffMaxMinCodingBlockSize;
+    uint32_t             m_uiMaxCUWidth;
+    uint32_t             m_uiMaxCUHeight;
+    uint32_t             m_uiMaxTotalCUDepth; ///< Total CU depth, relative to the smallest possible transform block size.
+    
+    //Window           m_conformanceWindow;
+    
+    RPSList_t       m_RPSList;
+    bool            m_bLongTermRefsPresent;
+    bool            m_SPSTemporalMVPEnabledFlag;
+    int32_t         m_numReorderPics[MAX_TLAYER];
+    
+    // Tool list
+    uint32_t        m_uiQuadtreeTULog2MaxSize;
+    uint32_t        m_uiQuadtreeTULog2MinSize;
+    uint32_t        m_uiQuadtreeTUMaxDepthInter;
+    uint32_t        m_uiQuadtreeTUMaxDepthIntra;
+    bool            m_usePCM;
+    uint32_t        m_pcmLog2MaxSize;
+    uint32_t        m_uiPCMLog2MinSize;
+    bool            m_useAMP;
+    
+    // Parameter
+    //BitDepths       m_bitDepths;
+    int32_t         m_qpBDOffset[MAX_NUM_CHANNEL_TYPE];
+    int32_t         m_pcmBitDepths[MAX_NUM_CHANNEL_TYPE];
+    bool            m_bPCMFilterDisableFlag;
+    
+    uint32_t        m_uiBitsForPOC;
+    uint32_t        m_numLongTermRefPicSPS;
+    uint32_t        m_ltRefPicPocLsbSps[MAX_NUM_LONG_TERM_REF_PICS];
+    bool            m_usedByCurrPicLtSPSFlag[MAX_NUM_LONG_TERM_REF_PICS];
+    // Max physical transform size
+    uint32_t        m_uiMaxTrSize;
+    
+    bool            m_bUseSAO;
+    
+    bool            m_bTemporalIdNestingFlag; // temporal_id_nesting_flag
+    
+    bool            m_scalingListEnabledFlag;
+    bool            m_scalingListPresentFlag;
+    //ScalingList_t   m_scalingList;
+    uint32_t        m_uiMaxDecPicBuffering[MAX_TLAYER];
+    uint32_t        m_uiMaxLatencyIncreasePlus1[MAX_TLAYER];
+    
+    bool            m_useStrongIntraSmoothing;
+    
+    bool            m_vuiParametersPresentFlag;
+    VUI_t           m_vuiParameters;
+    
+    //TComSPSRExt      m_spsRangeExtension;
+    
+    //static const int32_t m_winUnitX[NUM_CHROMA_FORMAT];
+    //static const int32_t m_winUnitY[NUM_CHROMA_FORMAT];
+    //TComPTL          m_pcPTL;
 } SPS_t;
 
 

@@ -847,7 +847,7 @@ void ParseSPS(InputBitstream_t &bitstream, HevcInfo_t *pHevcInfo)
     uint32_t    sps_max_sub_layers_minus1 = 0;
     bool        sps_temporal_id_nesting_flag;
     uint32_t    sps_seq_parameter_set_id = 0;
-    uint32_t    chroma_format_idc;
+    ChromaFormat chroma_format_idc;
     bool        separate_colour_plane_flag = false;
     uint32_t    pic_width_in_luma_samples;
     uint32_t    pic_height_in_luma_samples;
@@ -872,7 +872,7 @@ void ParseSPS(InputBitstream_t &bitstream, HevcInfo_t *pHevcInfo)
     sps_seq_parameter_set_id    = READ_UVLC(bitstream, "sps_seq_parameter_set_id");
     p_sps = &sps[sps_seq_parameter_set_id];
     
-    chroma_format_idc           = READ_UVLC(bitstream, "chroma_format_idc");
+    chroma_format_idc           = (ChromaFormat) READ_UVLC(bitstream, "chroma_format_idc");
 
     if (3 == chroma_format_idc)
     {
@@ -1035,7 +1035,7 @@ void ParseSPS(InputBitstream_t &bitstream, HevcInfo_t *pHevcInfo)
     p_sps->m_uiMaxCUHeight                   = 1 << (p_sps->m_log2MinCodingBlockSize + p_sps->m_log2DiffMaxMinCodingBlockSize);
 
     p_sps->m_bLongTermRefsPresent            = long_term_ref_pics_present_flag;
-    p_sps->m_TMVPFlagsPresent                = sps_temporal_mvp_enabled_flag;
+    p_sps->m_SPSTemporalMVPEnabledFlag       = sps_temporal_mvp_enabled_flag;
     p_sps->m_bUseSAO                         = sample_adaptive_offset_enabled_flag;
     //printf("CtbSizeY=%u\n", p_sps->m_uiMaxCUWidth);
 
@@ -1404,7 +1404,7 @@ void ParseSliceHeader(InputBitstream_t &bitstream, NalUnitType nal_unit_type, st
                 }
             }
 
-            if (p_sps->m_TMVPFlagsPresent)
+            if (p_sps->m_SPSTemporalMVPEnabledFlag)
             {
                 slice_temporal_mvp_enabled_flag = READ_FLAG(bitstream, "slice_temporal_mvp_enabled_flag");
             }
@@ -1630,12 +1630,16 @@ uint32_t ParseSEI
             // D.2.2
             //
             //PAR_TRACE("Buffering Period: ");
-            for (uint8_t i = 0; i < (*payloadSize); i++)
-            {
-                uint8_t byte;
-                byte = (uint8_t) READ_CODE(bitstream, 8, "");
-                //PAR_TRACE("0x%02x ", byte);
-            }
+            //for (uint8_t i = 0; i < (*payloadSize); i++)
+            //{
+            //    uint8_t byte;
+            //    byte = (uint8_t) READ_CODE(bitstream, 8, "");
+            //    //PAR_TRACE("0x%02x ", byte);
+            //}
+
+            uint32_t bp_seq_parameter_set_id = READ_UVLC(bitstream, "bp_seq_parameter_set_id");
+
+
             //PAR_TRACE("\n");
             *payloadType = (SeiType) READ_CODE(bitstream, 8, "payloadType");
             *payloadSize = (uint8_t) READ_CODE(bitstream, 8, "payloadSize");
